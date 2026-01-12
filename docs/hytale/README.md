@@ -1,6 +1,11 @@
 # Hytale Server Software (Docs)
 
-This section contains **operations notes** about the official Hytale dedicated server.
+This section contains **internal reference notes** about the official Hytale dedicated server.
+
+These pages are used as a development aid for this repository and are **not** the primary end-user documentation for the Docker image.
+If you are looking for image usage docs, use:
+
+- [`docs/image/`](../image/)
 
 ## Key facts (from official docs)
 
