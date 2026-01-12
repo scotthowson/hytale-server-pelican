@@ -1,38 +1,38 @@
- # Security Policy
+# Security Policy
  
- ## Supported versions
+## Supported versions
  
- Security fixes are applied to the **latest released image tags** and the default branch.
+Security fixes are applied to the **latest released image tags** and the default branch.
  
- ## Reporting a vulnerability
+## Reporting a vulnerability
  
- Please **do not** open a public issue for security vulnerabilities.
+Please **do not** open a public issue for security vulnerabilities.
  
- Instead, use GitHub Security Advisories:
+Instead, use GitHub Security Advisories:
  
- - https://github.com/Hybrowse/hytale-server-docker/security/advisories/new
+- https://github.com/Hybrowse/hytale-server-docker/security/advisories/new
  
- Include:
+Include:
  
- - affected image tag(s)
- - reproduction steps
- - impact assessment
- - any suggested fix
+- affected image tag(s)
+- reproduction steps
+- impact assessment
+- any suggested fix
  
- ## Scope
+## Scope
  
- This repository covers:
+This repository covers:
  
- - container build files and scripts
- - entrypoint/runtime behavior
- - documentation that could lead to unsafe operations
+- container build files and scripts
+- entrypoint/runtime behavior
+- documentation that could lead to unsafe operations
  
- Vulnerabilities in the **official Hytale server software** itself should be reported to Hypixel Studios via their official channels.
+Vulnerabilities in the **official Hytale server software** itself should be reported to Hypixel Studios via their official channels.
  
- ## Secrets & sensitive data
+## Secrets & sensitive data
  
- When reporting issues, never include:
+When reporting issues, never include:
  
- - OAuth refresh/access tokens
- - `HYTALE_SERVER_SESSION_TOKEN` / `HYTALE_SERVER_IDENTITY_TOKEN`
- - `.hytale-downloader-credentials.json`
+- OAuth refresh/access tokens
+- `HYTALE_SERVER_SESSION_TOKEN` / `HYTALE_SERVER_IDENTITY_TOKEN`
+- `.hytale-downloader-credentials.json`

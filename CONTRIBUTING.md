@@ -1,68 +1,68 @@
- # Contributing
+# Contributing
  
- Thanks for contributing!
+Thanks for contributing!
  
- ## Ground rules
+## Ground rules
  
- - Keep changes **secure**, **performance-aware**, and **easy to operate**.
- - Favor **clear UX** (good defaults, helpful errors, predictable behavior).
- - Do not commit secrets or credentials.
+- Keep changes **secure**, **performance-aware**, and **easy to operate**.
+- Favor **clear UX** (good defaults, helpful errors, predictable behavior).
+- Do not commit secrets or credentials.
  
- ## What we accept
+## What we accept
  
- - improvements to container behavior (startup checks, better defaults)
- - documentation improvements
- - bug fixes
- - new features aligned with `ROADMAP.md`
+- improvements to container behavior (startup checks, better defaults)
+- documentation improvements
+- bug fixes
+- new features aligned with `ROADMAP.md`
  
- ## What we do not accept
+## What we do not accept
  
- - redistributing proprietary Hytale server binaries or assets
- - contributions that embed credentials/tokens
+- redistributing proprietary Hytale server binaries or assets
+- contributions that embed credentials/tokens
  
- ## Issues
+## Issues
  
- Please include:
+Please include:
  
- - the image tag you used
- - how you ran it (Compose snippet or `docker run`)
- - logs (redact tokens/credentials)
- - host OS and architecture
+- the image tag you used
+- how you ran it (Compose snippet or `docker run`)
+- logs (redact tokens/credentials)
+- host OS and architecture
  
- ## Pull requests
+## Pull requests
  
- - keep PRs focused
- - update docs if behavior changes
- - be explicit about security implications
+- keep PRs focused
+- update docs if behavior changes
+- be explicit about security implications
 
- ### DCO (sign-off required)
+### DCO (sign-off required)
 
- We require a Developer Certificate of Origin (DCO) sign-off on all commits.
+We require a Developer Certificate of Origin (DCO) sign-off on all commits.
 
- - Add a sign-off line to each commit using:
+Add a sign-off line to each commit using:
 
- ```bash
- git commit -s
- ```
+```bash
+git commit -s
+```
 
- This adds a line like:
+This adds a line like:
 
- ```text
- Signed-off-by: Your Name <your.email@example.com>
- ```
+```text
+Signed-off-by: Your Name <your.email@example.com>
+```
 
- By signing off, you certify that you have the right to submit the work and that it can be licensed under the repository license.
+By signing off, you certify that you have the right to submit the work and that it can be licensed under the repository license.
 
- Please also complete the checklist in `.github/pull_request_template.md`.
+Please also complete the checklist in `.github/pull_request_template.md`.
+
+## Local development
  
- ## Local development
+Repository-local planning and scratch work lives in `local/` and is intentionally ignored by git.
  
- Repository-local planning and scratch work lives in `local/` and is intentionally ignored by git.
+## Security
  
- ## Security
+For vulnerabilities, see `SECURITY.md`.
  
- For vulnerabilities, see `SECURITY.md`.
+## AI agents
  
- ## AI agents
- 
- We use AI agents to accelerate development. Agent instructions live in `AGENTS.md` and `CLAUDE.md`.
+We use AI agents to accelerate development. Agent instructions live in `AGENTS.md` and `CLAUDE.md`.
