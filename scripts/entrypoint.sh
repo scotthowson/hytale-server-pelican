@@ -428,4 +428,5 @@ if [ -n "${HYTALE_SERVER_IDENTITY_TOKEN:-}" ]; then
   set -- "$@" --identity-token "${HYTALE_SERVER_IDENTITY_TOKEN}"
 fi
 
+cd "${SERVER_DIR}"
 exec "$@"
