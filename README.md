@@ -17,16 +17,8 @@ This image is currently **under active development**.
 We plan to release **v0.1** on the day of the Hytale release, once we have access to the official server software and can validate that it works end-to-end.
 Further improvements and follow-up releases will land in the days after.
 
-## Documentation (start here)
+## Quickstart
 
-- [`docs/image/quickstart.md`](docs/image/quickstart.md)
-- [`docs/image/configuration.md`](docs/image/configuration.md)
-- [`docs/image/backups.md`](docs/image/backups.md)
-
-## Quickstart (Docker Compose)
- 
-Hytale uses **QUIC over UDP** (not TCP). Publish `5520/udp`.
- 
 ```yaml
 services:
   hytale:
@@ -42,101 +34,27 @@ services:
     restart: unless-stopped
 ```
 
-Start:
-
 ```bash
 docker compose up -d
 ```
 
-Update:
+> [!IMPORTANT]
+> **Two authentication steps required:**
+>
+> 1. **Downloader auth** (first run): follow the URL + device code in the logs to download server files
+> 2. **Server auth** (after startup): run `/auth login device` in the server console before players can connect
 
-Docker does **not** automatically pull a newer `:latest` image.
-To update:
+Full guide: [`docs/image/quickstart.md`](docs/image/quickstart.md)
 
-```bash
-docker compose pull
-docker compose up -d
-```
+Troubleshooting: [`docs/image/troubleshooting.md`](docs/image/troubleshooting.md)
 
-Recommended default: automatic download of `Assets.zip` and server files (best UX):
+## Documentation
 
-- Set `HYTALE_AUTO_DOWNLOAD=true` (already included above)
-- Follow the device-code link shown in logs on first run
-
-When `HYTALE_AUTO_DOWNLOAD=true`, the container will also run the downloader on each start to check for updates by default.
-To disable this and only download when files are missing, set `HYTALE_AUTO_UPDATE=false`.
-
-Auto-download details:
-
-- Downloader source: `https://downloader.hytale.com/hytale-downloader.zip`
-- Currently supported on `linux/amd64` only
-
-If you are running Docker on an arm64 host (for example Apple Silicon), you have two options:
-
-- Run the container as `linux/amd64` (Compose: `platform: linux/amd64`)
-- Or provision files manually (see: [`docs/image/server-files.md`](docs/image/server-files.md))
-
-Start and check logs if needed:
-
-```bash
-docker compose up -d
-docker compose logs -n 200 hytale
-```
-
-Next:
-
-- [`docs/image/configuration.md`](docs/image/configuration.md)
-- [`docs/image/backups.md`](docs/image/backups.md)
-
-## First-time authentication
- 
-When using `HYTALE_AUTO_DOWNLOAD=true`, the official downloader will print an authorization URL + device code in the container logs on first run.
-
-Follow that URL in your browser to authenticate.
-
-## Server authentication (required for player connections)
-
-In `HYTALE_AUTH_MODE=authenticated` mode, the server must be authenticated before players can connect.
-Attach to the server console and run:
-
-```text
-/auth login device
-```
-
-If multiple profiles are shown, pick one via `/auth select <number>`.
-
-For provider-grade automation, see: [`docs/hytale/server-provider-auth.md`](docs/hytale/server-provider-auth.md) (tokens via `HYTALE_SERVER_SESSION_TOKEN` / `HYTALE_SERVER_IDENTITY_TOKEN`).
-
-## JVM memory (important)
-
-If you don't set `JVM_XMX`, Java will pick a default heap size based on available container memory.
-For predictable production operation, set at least `JVM_XMX`.
-
-You can optionally set `JVM_XMS` as well. If you see high CPU usage from garbage collection, that can be a symptom of memory pressure and an `JVM_XMX` value that is too low.
-Monitor RAM/CPU usage for your player count and experiment with different values.
-
-Example:
-
-```yaml
-services:
-  hytale:
-    environment:
-      JVM_XMX: "6G"
-```
-
-See: [`docs/image/configuration.md`](docs/image/configuration.md#jvm-heap-tuning)
-
-## Server console (interactive)
-
-Attach:
-
-```bash
-docker compose attach hytale
-```
-
-Detach without stopping the server:
-
-- Press `Ctrl-p` then `Ctrl-q`
+- [`docs/image/quickstart.md`](docs/image/quickstart.md) — start here
+- [`docs/image/configuration.md`](docs/image/configuration.md) — environment variables, JVM tuning
+- [`docs/image/troubleshooting.md`](docs/image/troubleshooting.md) — common issues
+- [`docs/image/backups.md`](docs/image/backups.md) — backup configuration
+- [`docs/image/server-files.md`](docs/image/server-files.md) — manual provisioning (arm64, etc.)
 
 ## Why this image
 

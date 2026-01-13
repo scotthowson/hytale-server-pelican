@@ -18,11 +18,16 @@ It should **not** be used to redistribute proprietary server binaries.
 
 ## Pages
 
-- [`quickstart.md`](quickstart.md)
-- [`server-files.md`](server-files.md)
-- [`development.md`](development.md)
-- [`configuration.md`](configuration.md)
-- [`backups.md`](backups.md)
+- Start here: [`quickstart.md`](quickstart.md)
+- Then: [`configuration.md`](configuration.md)
+- Common issues: [`troubleshooting.md`](troubleshooting.md)
+- Ops: [`backups.md`](backups.md)
+- Manual provisioning: [`server-files.md`](server-files.md)
+- Development: [`development.md`](development.md)
 - `upgrades.md` (TODO)
-- `troubleshooting.md` (TODO)
 - `security.md` (TODO)
+
+## Advanced reference
+
+The `docs/hytale/` section contains notes from the official documentation.
+It is useful for advanced operators and providers, but the primary end-user docs for this image live in `docs/image/`.

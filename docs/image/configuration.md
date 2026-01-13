@@ -35,6 +35,19 @@ Current limitation:
 
 On arm64 hosts (for example Apple Silicon), you can also run the container as `linux/amd64` (Compose: `platform: linux/amd64`).
 
+## Server authentication (required for player connections)
+
+In `HYTALE_AUTH_MODE=authenticated` mode, the server must be authenticated **after startup** before players can connect.
+This is separate from the downloader OAuth flow used for auto-download.
+
+See:
+
+- [`quickstart.md`](quickstart.md)
+
+Advanced (providers / fleets):
+
+- [`../hytale/server-provider-auth.md`](../hytale/server-provider-auth.md) (tokens via `HYTALE_SERVER_SESSION_TOKEN` / `HYTALE_SERVER_IDENTITY_TOKEN`)
+
 ## Environment variables
 
 | Variable | Default | Description |
