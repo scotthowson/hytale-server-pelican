@@ -7,7 +7,7 @@ Hytale uses **QUIC over UDP** (not TCP). Publish `5520/udp`.
 ```yaml
 services:
   hytale:
-    image: ghcr.io/hybrowse/hytale-server:latest
+    image: hybrowse/hytale-server:latest
     environment:
       HYTALE_AUTO_DOWNLOAD: "true"
     ports:

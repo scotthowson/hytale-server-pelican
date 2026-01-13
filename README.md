@@ -2,7 +2,8 @@
  
 🐳 Production-ready Docker image for dedicated Hytale servers.
  
-**Image**: `ghcr.io/hybrowse/hytale-server`
+**Image (Docker Hub)**: `hybrowse/hytale-server`
+**Mirror (GHCR)**: `ghcr.io/hybrowse/hytale-server`
 
 Brought to you by [Hybrowse](https://hybrowse.gg) and the developer of [setupmc.com](https://setupmc.com).
 
@@ -29,7 +30,7 @@ Hytale uses **QUIC over UDP** (not TCP). Publish `5520/udp`.
 ```yaml
 services:
   hytale:
-    image: ghcr.io/hybrowse/hytale-server:latest
+    image: hybrowse/hytale-server:latest
     environment:
       HYTALE_AUTO_DOWNLOAD: "true"
     ports:

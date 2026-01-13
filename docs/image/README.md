@@ -2,7 +2,8 @@
 
 This section documents the Docker image:
 
-- `ghcr.io/hybrowse/hytale-server`
+- `hybrowse/hytale-server` (Docker Hub, primary)
+- `ghcr.io/hybrowse/hytale-server` (GHCR mirror)
 
 ## Goals
 

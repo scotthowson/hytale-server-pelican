@@ -9,7 +9,7 @@
      attributes:
        label: Image tag
        description: Which image tag did you run?
-       placeholder: ghcr.io/hybrowse/hytale-server:latest
+       placeholder: hybrowse/hytale-server:latest
      validations:
        required: true
 

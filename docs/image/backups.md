@@ -12,7 +12,7 @@ Until we have more operational experience with the official server, treat backup
 ```yaml
 services:
   hytale:
-    image: ghcr.io/hybrowse/hytale-server:latest
+    image: hybrowse/hytale-server:latest
     ports:
       - "5520:5520/udp"
     volumes:
