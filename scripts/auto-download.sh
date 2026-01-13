@@ -104,7 +104,7 @@ case "${HYTALE_DOWNLOADER_URL}" in
 esac
 
 ZIP_PATH="${HYTALE_DOWNLOADER_DIR}/hytale-downloader.zip"
-arch="$(uname -m)"
+arch="${HYTALE_TEST_ARCH:-$(uname -m)}"
 case "${arch}" in
   x86_64|amd64)
     bin_name="hytale-downloader-linux-amd64"

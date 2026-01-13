@@ -128,24 +128,14 @@ pass "auto-update can be disabled"
 rm -rf "${workdir2c}"
 
 # Test 5: auto-download must fail fast on arm64 without attempting network calls
+# Use HYTALE_TEST_ARCH to simulate arm64 on any runner.
 workdir3="$(mktemp -d)"
 chmod 0777 "${workdir3}"
-override="$(mktemp -d)"
-cat >"${override}/uname" <<'EOF'
-#!/bin/sh
-if [ "${1:-}" = "-m" ] || [ -z "${1:-}" ]; then
-  echo aarch64
-  exit 0
-fi
-exec /usr/bin/uname "$@"
-EOF
-chmod +x "${override}/uname"
 set +e
 out="$(docker run --rm \
-  -e HYTALE_AUTO_DOWNLOAD=true \
-  -e PATH=/override:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  --entrypoint /usr/local/bin/hytale-auto-download \
+  -e HYTALE_TEST_ARCH=aarch64 \
   -v "${workdir3}:/data" \
-  -v "${override}:/override:ro" \
   "${IMAGE_NAME}" 2>&1)"
 status=$?
 set -e
@@ -153,7 +143,7 @@ set -e
 echo "${out}" | grep -q "Auto-download is not supported on arm64" || fail "expected arm64 unsupported error"
 echo "${out}" | grep -q "provide server files and Assets.zip manually" || fail "expected manual provisioning hint on arm64"
 pass "auto-download fails fast on arm64"
-rm -rf "${workdir3}" "${override}"
+rm -rf "${workdir3}"
 
 # Test 6: stale auto-download lock must be removed automatically
 workdir4="$(mktemp -d)"
