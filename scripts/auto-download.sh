@@ -94,7 +94,7 @@ if [ -f "${HYTALE_SERVER_JAR}" ] && [ -f "${HYTALE_ASSETS_PATH}" ]; then
     log "Auto-download: server files already present and HYTALE_AUTO_UPDATE=false; skipping"
     exit 0
   fi
-  log "Auto-download: server files already present; will check for updates"
+  log "Auto-download: server files already present; checking for updates"
 fi
 
 case "${HYTALE_DOWNLOADER_URL}" in
