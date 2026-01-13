@@ -39,6 +39,10 @@ Open the URL in your browser and enter the device code. After completion, the do
 
 On subsequent runs, this step is skipped (credentials are stored on the `/data` volume).
 
+> [!NOTE]
+> **Apple Silicon (arm64):** The official downloader only supports `linux/amd64`.
+> Add `platform: linux/amd64` to your Compose file (uses emulation), or provision files manually: [`server-files.md`](server-files.md)
+
 > [!IMPORTANT]
 > **After** the server starts, you must authenticate it before players can connect.
 > If you skip this step, players will see: *"Server authentication unavailable - please try again later"*
@@ -84,4 +88,3 @@ Players can now connect.
 - [`configuration.md`](configuration.md) — environment variables, JVM tuning, backups
 - [`troubleshooting.md`](troubleshooting.md) — common issues and fixes
 - [`server-files.md`](server-files.md) — manual provisioning (if not using auto-download)
-- Apple Silicon (arm64): add `platform: linux/amd64` to your Compose file, or provision files manually

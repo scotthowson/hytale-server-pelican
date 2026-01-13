@@ -13,9 +13,7 @@ Brought to you by [Hybrowse](https://hybrowse.gg) and the developer of [setupmc.
 
 ## Status
 
-This image is currently **under active development**.
-We plan to release **v0.1** on the day of the Hytale release, once we have access to the official server software and can validate that it works end-to-end.
-Further improvements and follow-up releases will land in the days after.
+**v0.1 released.** Further releases will follow as the Hytale server software and this image evolve.
 
 ## Quickstart
 
@@ -42,7 +40,7 @@ docker compose up -d
 > **Two authentication steps required:**
 >
 > 1. **Downloader auth** (first run): follow the URL + device code in the logs to download server files
-> 2. **Server auth** (after startup): run `/auth login device` in the server console before players can connect
+> 2. **Server auth** (after startup): attach to the console (`docker compose attach hytale`), then run `/auth login device`
 
 Full guide: [`docs/image/quickstart.md`](docs/image/quickstart.md)
 

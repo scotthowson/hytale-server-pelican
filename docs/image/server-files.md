@@ -1,5 +1,16 @@
 # Server files (manual provisioning)
 
+> [!NOTE]
+> **You usually don't need this page.** By default (`HYTALE_AUTO_DOWNLOAD=true`), the container downloads and provisions server files automatically.
+
+Manual provisioning is needed if:
+
+- You are on **Apple Silicon (arm64)** and don't want to use `platform: linux/amd64` emulation
+- You want to pin a specific server version
+- You prefer full control over file provisioning
+
+---
+
 This Docker image runs the official Hytale dedicated server binaries from a mounted volume.
 This repository and image **do not** redistribute proprietary Hytale server binaries or assets.
 

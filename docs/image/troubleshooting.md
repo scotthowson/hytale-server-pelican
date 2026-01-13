@@ -10,8 +10,8 @@ Common issues and how to fix them.
 **Symptom:** Players cannot connect; you see this in server logs:
 
 ```text
-[SEVERE]               [HandshakeHandler] Server session token not available - cannot request auth grant
-[INFO]                         [Hytale] Disconnecting ... with the message: Server authentication unavailable - please try again later
+[SEVERE] [HandshakeHandler] Server session token not available - cannot request auth grant
+[INFO] [Hytale] Disconnecting ... with the message: Server authentication unavailable - please try again later
 ```
 
 **Cause:** The server is not authenticated. In `HYTALE_AUTH_MODE=authenticated` (the default), the server must complete a device-code login after startup before players can connect.
