@@ -41,7 +41,7 @@ jobs:
             hybrowse/hytale-server
             ghcr.io/hybrowse/hytale-server
           tags: |
-            type=ref,event=tag
+            type=semver,pattern={{version}}
             type=raw,value=latest,enable=${{ github.event.release.prerelease == false }}
 
       - name: Build and push
