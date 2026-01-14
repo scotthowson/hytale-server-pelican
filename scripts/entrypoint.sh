@@ -117,7 +117,11 @@ setup_machine_id() {
     exit 1
   fi
 
-  ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE}" ) 2>/dev/null || true
+  if ! ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE}" ) 2>/dev/null; then
+    log "WARNING: Could not write to ${MACHINE_ID_FILE} (read-only filesystem?)"
+    log "WARNING: The Hytale server may fail with 'Failed to get Hardware UUID'."
+    log "WARNING: See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/troubleshooting.md"
+  fi
   printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
 }
 

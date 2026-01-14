@@ -116,17 +116,25 @@ services:
 
 ## Read-only root filesystem
 
-**Symptom:** When running with a read-only root filesystem:
+**Symptom:** When running with a read-only root filesystem (e.g., Kubernetes with `readOnlyRootFilesystem: true`):
 
 ```text
-cannot create /etc/machine-id: Read-only file system
+WARNING: Could not write to /etc/machine-id (read-only filesystem?)
+WARNING: The Hytale server may fail with 'Failed to get Hardware UUID'.
 ```
 
-**Cause:** The container attempts to write a machine-id to `/etc/machine-id` for the Hytale downloader's OAuth flow.
+**Cause:** The container needs to write a machine-id to `/etc/machine-id`. The Hytale server reads this file for hardware identification.
 
-**Fix:** This warning is harmless. The machine-id is also persisted to `/data/.machine-id` and will be reused on subsequent starts. No action needed.
+**Fix (Kubernetes):** Disable read-only root filesystem:
 
-If you see other errors related to read-only filesystem, ensure you mount a writable `/tmp`:
+```yaml
+securityContext:
+  readOnlyRootFilesystem: false
+```
+
+The machine-id is persisted to `/data/.machine-id` for stability across restarts.
+
+**Fix (Docker Compose):** Mount `/tmp` as tmpfs if needed:
 
 ```yaml
 services:
