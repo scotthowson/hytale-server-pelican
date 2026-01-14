@@ -51,6 +51,12 @@ Advanced (providers / fleets):
 
 - [`../hytale/server-provider-auth.md`](../hytale/server-provider-auth.md) (tokens via `HYTALE_SERVER_SESSION_TOKEN` / `HYTALE_SERVER_IDENTITY_TOKEN`)
 
+## Mods
+
+This image supports **automatic mod download and updates from CurseForge**.
+
+See: [`curseforge-mods.md`](curseforge-mods.md)
+
 ## Environment variables
 
 | Variable | Default | Description |
@@ -96,7 +102,7 @@ Advanced (providers / fleets):
 | `HYTALE_FORCE_NETWORK_FLUSH` | `true` | If `true`, passes `--force-network-flush`. |
 | `HYTALE_GENERATE_SCHEMA` | `false` | If `true`, passes `--generate-schema`. |
 | `HYTALE_LOG` | *(empty)* | Passed as `--log`. |
-| `HYTALE_MODS_PATH` | *(empty)* | Passed as `--mods`. |
+| `HYTALE_MODS_PATH` | *(empty)* | Passed as `--mods`. If `HYTALE_CURSEFORGE_MODS` is set and you did not explicitly set `HYTALE_MODS_PATH`, it defaults to `/data/server/mods-curseforge`. |
 | `HYTALE_OWNER_NAME` | *(empty)* | Passed as `--owner-name`. |
 | `HYTALE_OWNER_UUID` | *(empty)* | Passed as `--owner-uuid`. |
 | `HYTALE_PREFAB_CACHE_PATH` | *(empty)* | Passed as `--prefab-cache`. |

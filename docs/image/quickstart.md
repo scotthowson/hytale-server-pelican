@@ -92,5 +92,6 @@ Players can now connect.
 ## Next steps
 
 - [`configuration.md`](configuration.md) — environment variables, JVM tuning, backups
+- [`curseforge-mods.md`](curseforge-mods.md) — automatic CurseForge mod download and updates
 - [`troubleshooting.md`](troubleshooting.md) — common issues and fixes
 - [`server-files.md`](server-files.md) — manual provisioning (if not using auto-download)

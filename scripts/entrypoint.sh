@@ -83,6 +83,8 @@ HYTALE_WORLD_GEN_PATH="${HYTALE_WORLD_GEN_PATH:-}"
 HYTALE_AUTO_DOWNLOAD="${HYTALE_AUTO_DOWNLOAD:-false}"
 HYTALE_AUTO_UPDATE="${HYTALE_AUTO_UPDATE:-true}"
 
+HYTALE_CURSEFORGE_MODS="${HYTALE_CURSEFORGE_MODS:-}"
+
 ENABLE_AOT="${ENABLE_AOT:-auto}"
 
 HYTALE_MACHINE_ID="${HYTALE_MACHINE_ID:-}"
@@ -191,6 +193,15 @@ if [ "${missing}" -ne 0 ]; then
   log "- See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/server-files.md"
   log "- See https://github.com/Hybrowse/hytale-server-docker/blob/main/docs/image/quickstart.md"
   exit 1
+fi
+
+if [ -n "${HYTALE_CURSEFORGE_MODS}" ]; then
+  if [ -z "${HYTALE_MODS_PATH:-}" ]; then
+    HYTALE_MODS_PATH="${DATA_DIR}/server/mods-curseforge"
+  fi
+  mkdir -p "${HYTALE_MODS_PATH}"
+  check_dir_writable "${HYTALE_MODS_PATH}"
+  /usr/local/bin/hytale-curseforge-mods
 fi
 
 log "Starting Hytale dedicated server"

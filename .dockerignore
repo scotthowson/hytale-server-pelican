@@ -3,6 +3,7 @@
  local
  backups
  data
+.secrets
  docs
  
  .DS_Store

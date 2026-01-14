@@ -91,6 +91,62 @@ tasks:
       - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
       - docker run -d -it --platform linux/amd64 --name {{.DEV_CONTAINER_NAME}} -e HYTALE_AUTO_DOWNLOAD=true -p {{.DEV_PORT}}:5520/udp -v {{.DEV_DATA_DIR}}:/data {{.IMAGE_NAME_AMD64}}
 
+  dev:up:curseforge:
+    desc: Start a local server container with CurseForge mod auto-download (requires CURSEFORGE_API_KEY env var or ./.secrets/curseforge_api_key.txt)
+    cmds:
+      - task: build
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - |
+        if [ -f ./.secrets/curseforge_api_key.txt ]; then
+          docker run -d -it --name {{.DEV_CONTAINER_NAME}} \
+            -e HYTALE_AUTO_DOWNLOAD=true \
+            -e HYTALE_CURSEFORGE_MODS="1428599 1409811" \
+            -e HYTALE_CURSEFORGE_API_KEY_SRC=/run/secrets/curseforge_api_key \
+            -v ./.secrets/curseforge_api_key.txt:/run/secrets/curseforge_api_key:ro \
+            -p {{.DEV_PORT}}:5520/udp \
+            -v {{.DEV_DATA_DIR}}:/data \
+            {{.IMAGE_NAME}}
+        elif [ -n "${CURSEFORGE_API_KEY:-}" ]; then
+          docker run -d -it --name {{.DEV_CONTAINER_NAME}} \
+            -e HYTALE_AUTO_DOWNLOAD=true \
+            -e HYTALE_CURSEFORGE_MODS="1428599 1409811" \
+            -e HYTALE_CURSEFORGE_API_KEY="${CURSEFORGE_API_KEY}" \
+            -p {{.DEV_PORT}}:5520/udp \
+            -v {{.DEV_DATA_DIR}}:/data \
+            {{.IMAGE_NAME}}
+        else
+          echo "ERROR: CurseForge API key required. Set CURSEFORGE_API_KEY env var or create ./.secrets/curseforge_api_key.txt"
+          exit 1
+        fi
+
+  dev:up:curseforge:amd64:
+    desc: Start a local server container as linux/amd64 with CurseForge mod auto-download (requires CURSEFORGE_API_KEY env var or ./.secrets/curseforge_api_key.txt)
+    cmds:
+      - task: build:amd64
+      - docker rm -f {{.DEV_CONTAINER_NAME}} 2>/dev/null || true
+      - |
+        if [ -f ./.secrets/curseforge_api_key.txt ]; then
+          docker run -d -it --platform linux/amd64 --name {{.DEV_CONTAINER_NAME}} \
+            -e HYTALE_AUTO_DOWNLOAD=true \
+            -e HYTALE_CURSEFORGE_MODS="1428599 1409811" \
+            -e HYTALE_CURSEFORGE_API_KEY_SRC=/run/secrets/curseforge_api_key \
+            -v ./.secrets/curseforge_api_key.txt:/run/secrets/curseforge_api_key:ro \
+            -p {{.DEV_PORT}}:5520/udp \
+            -v {{.DEV_DATA_DIR}}:/data \
+            {{.IMAGE_NAME_AMD64}}
+        elif [ -n "${CURSEFORGE_API_KEY:-}" ]; then
+          docker run -d -it --platform linux/amd64 --name {{.DEV_CONTAINER_NAME}} \
+            -e HYTALE_AUTO_DOWNLOAD=true \
+            -e HYTALE_CURSEFORGE_MODS="1428599 1409811" \
+            -e HYTALE_CURSEFORGE_API_KEY="${CURSEFORGE_API_KEY}" \
+            -p {{.DEV_PORT}}:5520/udp \
+            -v {{.DEV_DATA_DIR}}:/data \
+            {{.IMAGE_NAME_AMD64}}
+        else
+          echo "ERROR: CurseForge API key required. Set CURSEFORGE_API_KEY env var or create ./.secrets/curseforge_api_key.txt"
+          exit 1
+        fi
+
   dev:aot:generate:
     desc: Generate an AOT cache at ./data/server/HytaleServer.aot (requires server files + Assets.zip in ./data)
     cmds:

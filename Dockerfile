@@ -1,7 +1,7 @@
 FROM eclipse-temurin:25-jre
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends tini ca-certificates curl unzip \
+  && apt-get install -y --no-install-recommends tini ca-certificates curl unzip jq \
   && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -f hytale \
@@ -17,7 +17,8 @@ WORKDIR /data
 
 COPY scripts/entrypoint.sh /usr/local/bin/hytale-entrypoint
 COPY scripts/auto-download.sh /usr/local/bin/hytale-auto-download
-RUN chmod 0755 /usr/local/bin/hytale-entrypoint /usr/local/bin/hytale-auto-download
+COPY scripts/curseforge-mods.sh /usr/local/bin/hytale-curseforge-mods
+RUN chmod 0755 /usr/local/bin/hytale-entrypoint /usr/local/bin/hytale-auto-download /usr/local/bin/hytale-curseforge-mods
 
 USER hytale
 

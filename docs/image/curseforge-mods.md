@@ -1,0 +1,151 @@
+# CurseForge Mods
+
+This image supports **automatic mod download and updates from CurseForge**.
+
+You can configure mods via environment variables, and the container will install (and optionally update) mods on startup.
+
+## Why this is useful
+
+- Fully automated mod provisioning (no manual downloads)
+- Automatic updates on container restart (optional)
+- Managed mods are stored separately from any manually installed mods
+- Idempotent installs via a local manifest on the `/data` volume
+
+## Requirements
+
+- A **CurseForge API key** (required)
+- Internet access to `https://api.curseforge.com` and the CurseForge CDN
+
+## Getting an API key
+
+1. Go to [console.curseforge.com](https://console.curseforge.com/)
+2. Create an API key
+3. Copy your API key
+
+**Important:** CurseForge API keys start with `$2a$10$`. If your key doesn't look like this, it may be incorrectly formatted.
+
+### Docker Compose escaping
+
+In Docker Compose YAML, dollar signs (`$`) must be escaped as `$$`. If you set the key directly in the YAML (not recommended), you need:
+
+```yaml
+HYTALE_CURSEFORGE_API_KEY: "$$2a$$10$$YourKeyHere..."
+```
+
+**Recommended:** Use a secret file instead to avoid escaping issues:
+
+```yaml
+HYTALE_CURSEFORGE_API_KEY_SRC: "/run/secrets/curseforge_api_key"
+secrets:
+  curseforge_api_key:
+    file: ./secrets/curseforge_api_key.txt
+```
+
+The file should contain the API key as-is (with normal `$` signs, no escaping).
+
+## Quickstart (Docker Compose)
+
+```yaml
+services:
+  hytale:
+    image: hybrowse/hytale-server:latest
+    environment:
+      HYTALE_AUTO_DOWNLOAD: "true"
+
+      # Enable CurseForge mod management
+      HYTALE_CURSEFORGE_MODS: |
+        123456
+        234567:3456789
+
+      # Read the API key from a mounted secret file
+      HYTALE_CURSEFORGE_API_KEY_SRC: "/run/secrets/curseforge_api_key"
+
+    secrets:
+      - curseforge_api_key
+
+    ports:
+      - "5520:5520/udp"
+    volumes:
+      - ./data:/data
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+
+secrets:
+  curseforge_api_key:
+    file: ./secrets/curseforge_api_key.txt
+```
+
+Notes:
+
+- If `HYTALE_CURSEFORGE_MODS` is set and you did **not** explicitly set `HYTALE_MODS_PATH`, the image defaults it to `/data/server/mods-curseforge`.
+- The default `mods/` folder of the Hytale server remains unaffected.
+
+## Mod reference formats
+
+`HYTALE_CURSEFORGE_MODS` supports a whitespace / newline separated list.
+
+- `123456`
+  - Install the latest file for project `123456` (based on filters)
+- `123456:3456789`
+  - Install a specific file ID (pinned)
+- `123456@server`
+  - Pick the latest file whose `fileName` or `displayName` contains `server`
+- `@/path/to/mods.txt`
+  - Load additional entries from a file inside the container
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---:|---|
+| `HYTALE_CURSEFORGE_MODS` | *(empty)* | Enables CurseForge mod management and lists mod references. |
+| `HYTALE_CURSEFORGE_API_KEY` | *(empty)* | CurseForge API key (**secret**). Prefer `*_SRC` in production. |
+| `HYTALE_CURSEFORGE_API_KEY_SRC` | *(empty)* | Path to a file containing the API key (Docker secrets recommended). |
+| `HYTALE_CURSEFORGE_AUTO_UPDATE` | `true` | If `true`, checks for updates on startup (downloads only when needed). If `false`, keeps an already installed version. |
+| `HYTALE_CURSEFORGE_RELEASE_CHANNEL` | `release` | Allowed channels: `release`, `beta`, `alpha`, `any`. |
+| `HYTALE_CURSEFORGE_GAME_VERSION_FILTER` | *(empty)* | Filters `gameVersions[]` in the CurseForge API response. Leave empty to accept all versions. |
+| `HYTALE_CURSEFORGE_CHECK_INTERVAL_SECONDS` | `0` | If `> 0`, skips remote checks when the last check was recent (reduces API usage on frequent restarts). |
+| `HYTALE_CURSEFORGE_PRUNE` | `false` | If `true`, removes previously installed CurseForge mods that are no longer listed in `HYTALE_CURSEFORGE_MODS`. |
+| `HYTALE_CURSEFORGE_FAIL_ON_ERROR` | `false` | If `true`, fails container startup when any configured mod cannot be resolved/installed. |
+| `HYTALE_CURSEFORGE_LOCK` | `true` | If `false`, disables the CurseForge install lock (power users). |
+
+## Behavior and data layout
+
+### Mods directory
+
+- Visible mods directory (passed as `--mods`):
+  - `/data/server/mods-curseforge` (default when CurseForge is enabled)
+  - Or whatever you set `HYTALE_MODS_PATH` to
+
+The image installs each mod file and then creates a stable file in the visible directory:
+
+- `cf-<modId>-<fileId>-<fileName>`
+
+This avoids filename collisions and makes updates deterministic.
+
+### State directory (manifest, downloads)
+
+State is stored on the `/data` volume under:
+
+- `/data/.hytale-curseforge-mods/`
+
+Files:
+
+- `manifest.json` stores the installed file IDs and last check timestamp
+
+### Lock
+
+To prevent concurrent installations into the same `/data` volume, the image uses a lock:
+
+- `/data/.hytale-curseforge-mods-lock`
+
+## Troubleshooting
+
+- If the container logs warn about a missing API key:
+  - set `HYTALE_CURSEFORGE_API_KEY` or `HYTALE_CURSEFORGE_API_KEY_SRC`
+  - set `HYTALE_CURSEFORGE_FAIL_ON_ERROR=true` if you want missing/failed mods to block startup
+
+- If a mod cannot be resolved:
+  - verify the numeric project ID / file ID
+  - try pinning a specific file via `modId:fileId`
+  - if using `HYTALE_CURSEFORGE_GAME_VERSION_FILTER`, verify it matches the mod's file metadata
