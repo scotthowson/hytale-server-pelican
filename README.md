@@ -18,10 +18,6 @@ Brought to you by [Hybrowse](https://hybrowse.gg) and the developer of [setupmc.
 
 Join the **Hybrowse Discord Server** to get help and stay up to date: https://hybrowse.gg/discord
 
-## Status
-
-**v0.1 released.** Further releases will follow as the Hytale server software and this image evolve.
-
 ## Quickstart
 
 ```yaml
