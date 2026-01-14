@@ -86,11 +86,11 @@ Notes:
 `HYTALE_CURSEFORGE_MODS` supports a whitespace / newline separated list.
 
 - `123456`
-  - Install the latest file for project `123456` (based on filters)
+  - Install the latest file for CurseForge project with ID `123456` (can be found in the sidebar of the mod's page)
 - `123456:3456789`
-  - Install a specific file ID (pinned)
+  - Install a specific file with ID `3456789` for CurseForge project with ID `123456`
 - `123456@server`
-  - Pick the latest file whose `fileName` or `displayName` contains `server`
+  - Pick the latest file whose `fileName` or `displayName` contains `server` for CurseForge project with ID `123456`
 - `@/path/to/mods.txt`
   - Load additional entries from a file inside the container
 
