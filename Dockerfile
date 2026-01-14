@@ -1,6 +1,5 @@
+FROM eclipse-temurin:25-jre
 
- FROM eclipse-temurin:25-jre
- 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends tini ca-certificates curl unzip \
   && rm -rf /var/lib/apt/lists/*
