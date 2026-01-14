@@ -1,3 +1,6 @@
+[![Discord](https://img.shields.io/discord/1459154799407665397?label=Join%20Discord)](https://hybrowse.gg/discord)
+[![Docker Pulls](https://img.shields.io/docker/pulls/hybrowse/hytale-server)](https://hub.docker.com/r/hybrowse/hytale-server)
+
 # Hytale Server Docker Image
  
 **🐳 Production-ready Docker image for dedicated Hytale servers.**
