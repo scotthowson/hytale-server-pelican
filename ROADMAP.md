@@ -14,6 +14,7 @@ This roadmap focuses on delivering a **secure, fast, and easy-to-operate** Docke
 - Run the Hytale server from a persistent data volume (e.g. `./data:/data`)
 - Clear validation & error messages when server files / `Assets.zip` are missing
 - Optional opt-in runtime download & extraction of server files and `Assets.zip` via the official Hytale Downloader CLI (where supported)
+- Optional pre-start downloads into `universe/` and `mods/` (URL-based)
 - Networking defaults:
   - UDP/QUIC on `5520/udp`
   - configurable bind address/port
@@ -26,22 +27,24 @@ This roadmap focuses on delivering a **secure, fast, and easy-to-operate** Docke
   - JVM heap (Xms/Xmx) + extra JVM args
   - extra server args passthrough
 - Run as **non-root** by default
+- Kubernetes deployment assets (Helm chart + Kustomize)
 - Documentation:
   - Compose quickstart
   - firewall/port-forwarding notes (UDP)
+  - Upgrades guide (including grace period recommendations)
+  - Security hardening guidance
 - Config file interpolation via environment variables (e.g. `CFG_*`), to generate/update config files at startup
+- Basic healthcheck (process-level) with a documented way to disable it
  
 ## Next (operator UX & reliability)
 
 - Troubleshooting commands and diagnostics output (versions, config paths, bind info)
 - Configurable UID/GID for file permission alignment
-- Graceful shutdown behavior with documented stop/grace period
-- Basic healthcheck (process-level) with a documented way to disable it
 - Better developer workflow and contributor ergonomics
 
 ## Later (hardening, observability & operational guidance)
 
-- Hardening guidance (read-only root filesystem, capability dropping, seccomp/profile recommendations)
+- Further hardening guidance (seccomp/profile recommendations, provider-grade baselines)
 - Metrics integration guide (Prometheus exporter plugin usage)
 - Operational recommendations:
   - log management/retention
@@ -50,5 +53,4 @@ This roadmap focuses on delivering a **secure, fast, and easy-to-operate** Docke
 ## Future ideas (TBD)
 
 - Provider-grade features (hosting / fleets)
-- Kubernetes Helm chart
-- Optional mod/plugin installation automation (e.g. via CurseForge API)
+- Optional mod/plugin installation automation beyond CurseForge (TBD)

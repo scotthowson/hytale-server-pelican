@@ -26,8 +26,8 @@ It should **not** be used to redistribute proprietary server binaries.
 - Ops: [`backups.md`](backups.md)
 - Manual provisioning: [`server-files.md`](server-files.md)
 - Development: [`development.md`](development.md)
-- `upgrades.md` (TODO)
-- `security.md` (TODO)
+- Upgrades: [`upgrades.md`](upgrades.md)
+- Security hardening: [`security.md`](security.md)
 
 ## Advanced reference
 
