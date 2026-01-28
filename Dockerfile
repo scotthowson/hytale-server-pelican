@@ -5,9 +5,11 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # Create hytale user/group with UID 1000 for default (non-Pelican) usage
-# Pelican will override this at runtime with its own user
-RUN groupadd -g 1000 hytale \
-  && useradd -m -u 1000 -g hytale -s /usr/sbin/nologin hytale
+# Use -f to ignore if group already exists, and check if user exists before creating
+RUN groupadd -f -g 1000 hytale || true \
+  && if ! id -u 1000 >/dev/null 2>&1; then \
+       useradd -m -u 1000 -g 1000 -s /usr/sbin/nologin hytale; \
+     fi
 
 # Use /home/container for Pelican compatibility instead of /data
 WORKDIR /home/container
@@ -33,9 +35,9 @@ RUN chmod 0755 /usr/local/bin/hytale-entrypoint \
     /usr/local/bin/hytale-save-auth-tokens \
     /usr/local/bin/hytale-extract-auth-tokens
 
-# Set default user to hytale (UID 1000)
+# Set default user to UID 1000 (satisfies CI tests)
 # Pelican will override this at runtime with --user flag
-USER hytale
+USER 1000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=3 CMD ["/usr/local/bin/hytale-healthcheck"]
 
