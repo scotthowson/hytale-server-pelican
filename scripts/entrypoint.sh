@@ -19,6 +19,22 @@ log() {
 DATA_DIR="${DATA_DIR:-/home/container}"
 SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 
+# Auto-load server tokens from persistent file if not already set
+HYTALE_SERVER_TOKENS_FILE="${HYTALE_SERVER_TOKENS_FILE:-${DATA_DIR}/.hytale-server-tokens}"
+if [ -f "${HYTALE_SERVER_TOKENS_FILE}" ]; then
+  if [ -z "${HYTALE_SERVER_SESSION_TOKEN:-}" ]; then
+    HYTALE_SERVER_SESSION_TOKEN="$(grep '^session_token=' "${HYTALE_SERVER_TOKENS_FILE}" 2>/dev/null | cut -d= -f2- || true)"
+    export HYTALE_SERVER_SESSION_TOKEN
+  fi
+  if [ -z "${HYTALE_SERVER_IDENTITY_TOKEN:-}" ]; then
+    HYTALE_SERVER_IDENTITY_TOKEN="$(grep '^identity_token=' "${HYTALE_SERVER_TOKENS_FILE}" 2>/dev/null | cut -d= -f2- || true)"
+    export HYTALE_SERVER_IDENTITY_TOKEN
+  fi
+  if [ -n "${HYTALE_SERVER_SESSION_TOKEN}" ] && [ -n "${HYTALE_SERVER_IDENTITY_TOKEN}" ]; then
+    log "Auto-loaded server authentication tokens from ${HYTALE_SERVER_TOKENS_FILE}"
+  fi
+fi
+
 check_data_writable() {
   if [ ! -w "${DATA_DIR}" ]; then
     log "ERROR: Cannot write to ${DATA_DIR}"
