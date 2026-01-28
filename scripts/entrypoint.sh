@@ -491,7 +491,7 @@ fi
 
 if [ -n "${HYTALE_VALIDATE_PREFABS:-}" ]; then
   if is_true "${HYTALE_VALIDATE_PREFABS}"; then
-    set -- "$@" --validate-prefabs"
+    set -- "$@" --validate-prefabs
   else
     set -- "$@" --validate-prefabs "${HYTALE_VALIDATE_PREFABS}"
   fi
