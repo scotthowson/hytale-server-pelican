@@ -234,7 +234,8 @@ fi
 log "Auto-download: extracting Assets.zip and Server/ from game package"
 
 unzip -o "${HYTALE_GAME_ZIP_PATH}" 'Assets.zip' -d "${DATA_DIR}" >/dev/null
-tmp_extract_dir="$(mktemp -d /tmp/hytale-server-extract.XXXXXX 2>/dev/null || mktemp -d)"
+# Use container's data directory for extraction instead of host's /tmp
+tmp_extract_dir="$(mktemp -d "${DATA_DIR}/.hytale-server-extract.XXXXXX")"
 unzip -o "${HYTALE_GAME_ZIP_PATH}" 'Server/*' -d "${tmp_extract_dir}" >/dev/null
 
 if [ -d "${tmp_extract_dir}/Server" ]; then
