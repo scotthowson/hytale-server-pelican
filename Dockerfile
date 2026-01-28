@@ -11,6 +11,10 @@ RUN groupadd -f -g 1000 hytale || true \
        useradd -m -u 1000 -g 1000 -s /usr/sbin/nologin hytale; \
      fi
 
+# Remove /etc/machine-id and create it as a regular file (not a symlink)
+# This allows the entrypoint to write to it at runtime
+RUN rm -f /etc/machine-id && touch /etc/machine-id && chmod 666 /etc/machine-id
+
 # Use /home/container for Pelican compatibility instead of /data
 WORKDIR /home/container
 
