@@ -20,7 +20,7 @@ if is_true "${HYTALE_HEALTHCHECK_DISABLED:-false}"; then
   exit 0
 fi
 
-DATA_DIR="${DATA_DIR:-/data}"
+DATA_DIR="${DATA_DIR:-/home/container}"
 SERVER_DIR="${SERVER_DIR:-${DATA_DIR}/server}"
 
 HYTALE_SERVER_JAR="${HYTALE_SERVER_JAR:-${SERVER_DIR}/HytaleServer.jar}"

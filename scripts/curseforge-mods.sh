@@ -58,7 +58,7 @@ expand_refs() {
   done
 }
 
-DATA_DIR="${DATA_DIR:-/data}"
+DATA_DIR="${DATA_DIR:-/home/container}"
 CF_API_BASE="https://api.curseforge.com"
 CF_API_HOST="api.curseforge.com"
 
