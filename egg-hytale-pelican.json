@@ -95,6 +95,21 @@
             "sort": 3
         },
         {
+            "name": "Machine ID",
+            "description": "32-character hex string for hardware UUID (auto-generated if not set). Used for encrypted credential storage. Only change if migrating servers.",
+            "env_variable": "HYTALE_MACHINE_ID",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "nullable",
+                "string",
+                "regex:/^[0-9a-f]{32}$/",
+                "max:32"
+            ],
+            "sort": 9
+        },
+        {
             "name": "JVM Min Memory",
             "description": "Minimum JVM heap size (e.g., 2G, 4G). Leave empty to omit -Xms flag.",
             "env_variable": "HYTALE_JVM_XMS",
