@@ -17,7 +17,7 @@ log() {
 }
 
 DATA_DIR="${DATA_DIR:-/home/container}"
-SERVER_DIR="${SERVER_DIR:-/home/container/server}"
+SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 
 check_data_writable() {
   if [ ! -w "${DATA_DIR}" ]; then
@@ -221,7 +221,7 @@ if [ -n "${HYTALE_CURSEFORGE_MODS}" ]; then
 fi
 
 DATA_DIR="${DATA_DIR:-/home/container}"
-SERVER_DIR="${SERVER_DIR:-/home/container/server}"
+SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 export DATA_DIR SERVER_DIR
 
 /usr/local/bin/hytale-prestart-downloads

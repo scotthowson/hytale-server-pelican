@@ -17,7 +17,7 @@ is_true() {
 }
 
 DATA_DIR="${DATA_DIR:-/home/container}"
-SERVER_DIR="${SERVER_DIR:-/home/container/server}"
+SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 
 check_dir_writable() {
   dir="$1"

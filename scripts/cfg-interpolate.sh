@@ -17,7 +17,7 @@ log() {
 }
 
 DATA_DIR="${DATA_DIR:-/home/container}"
-SERVER_DIR="${SERVER_DIR:-/home/container/server}"
+SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 
 cfg_interpolation_enabled() {
   if ! is_true "${HYTALE_CFG_INTERPOLATION:-true}"; then

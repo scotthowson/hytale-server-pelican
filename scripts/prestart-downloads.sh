@@ -204,7 +204,7 @@ download_url_list() {
 }
 
 DATA_DIR="${DATA_DIR:-/home/container}"
-SERVER_DIR="${SERVER_DIR:-/home/container/server}"
+SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 
 HYTALE_UNIVERSE_DOWNLOAD_URLS="${HYTALE_UNIVERSE_DOWNLOAD_URLS:-}"
 HYTALE_UNIVERSE_DOWNLOAD_PATH="${HYTALE_UNIVERSE_DOWNLOAD_PATH:-}"
