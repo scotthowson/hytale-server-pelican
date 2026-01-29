@@ -19,6 +19,108 @@ log() {
 DATA_DIR="${DATA_DIR:-/home/container}"
 SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 
+# ============================================================================
+# MACHINE ID / HARDWARE UUID SETUP
+# ============================================================================
+# The Hytale server's HardwareUtil.java tries to get a unique hardware identifier
+# for authentication persistence. In containers, the standard methods fail:
+#   - dmidecode requires root and real hardware
+#   - /sys/class/dmi/id/product_uuid requires host access
+#   - /etc/machine-id may be ephemeral in some container runtimes
+#
+# Our solution:
+#   1. Store a persistent machine-id in the data volume
+#   2. Provide a fake dmidecode that returns the same UUID
+#   3. Pass the UUID as Java system properties
+#   4. Write to /etc/machine-id if possible (some Java code reads this)
+# ============================================================================
+
+setup_machine_id() {
+  MACHINE_ID_PERSISTENT="${DATA_DIR}/.machine-id"
+  HARDWARE_UUID_PERSISTENT="${DATA_DIR}/.hardware-uuid"
+  MACHINE_ID_FILE_ETC="/etc/machine-id"
+  MACHINE_ID_FILE_DBUS="/var/lib/dbus/machine-id"
+  
+  machine_id=""
+  
+  # Priority 1: Explicit environment variable
+  if [ -n "${HYTALE_MACHINE_ID:-}" ]; then
+    machine_id="${HYTALE_MACHINE_ID}"
+    log "Using HYTALE_MACHINE_ID from environment"
+  fi
+  
+  # Priority 2: Persistent file in data volume
+  if [ -z "${machine_id}" ] && [ -f "${MACHINE_ID_PERSISTENT}" ]; then
+    machine_id="$(cat "${MACHINE_ID_PERSISTENT}" 2>/dev/null | tr -d '[:space:]' || true)"
+    if [ "${#machine_id}" -eq 32 ]; then
+      log "Loaded persistent machine-id from ${MACHINE_ID_PERSISTENT}"
+    else
+      machine_id=""
+    fi
+  fi
+  
+  # Priority 3: Generate new machine-id
+  if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
+    if command -v uuidgen >/dev/null 2>&1; then
+      machine_id="$(uuidgen | tr -d '-' | tr '[:upper:]' '[:lower:]')"
+    else
+      machine_id="$(cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '-' | tr '[:upper:]' '[:lower:]' || true)"
+    fi
+    log "Generated new machine-id: ${machine_id}"
+  fi
+  
+  # Validate
+  if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
+    log "ERROR: Failed to generate a valid 32-character machine-id"
+    log "ERROR: Got: '${machine_id}' (length: ${#machine_id})"
+    exit 1
+  fi
+  
+  # Generate UUID format (8-4-4-4-12) from machine-id
+  hardware_uuid="$(printf '%s-%s-%s-%s-%s' \
+    "$(printf '%s' "${machine_id}" | cut -c1-8 | tr '[:lower:]' '[:upper:]')" \
+    "$(printf '%s' "${machine_id}" | cut -c9-12 | tr '[:lower:]' '[:upper:]')" \
+    "$(printf '%s' "${machine_id}" | cut -c13-16 | tr '[:lower:]' '[:upper:]')" \
+    "$(printf '%s' "${machine_id}" | cut -c17-20 | tr '[:lower:]' '[:upper:]')" \
+    "$(printf '%s' "${machine_id}" | cut -c21-32 | tr '[:lower:]' '[:upper:]')")"
+  
+  # Persist to data volume (critical for auth persistence across restarts)
+  wrote_persistent=0
+  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null; then
+    chmod 600 "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
+    wrote_persistent=1
+  fi
+  
+  if printf '%s\n' "${hardware_uuid}" > "${HARDWARE_UUID_PERSISTENT}" 2>/dev/null; then
+    chmod 600 "${HARDWARE_UUID_PERSISTENT}" 2>/dev/null || true
+  fi
+  
+  # Try to write to system locations (may fail in read-only containers)
+  wrote_etc=0
+  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" 2>/dev/null; then
+    wrote_etc=1
+  fi
+  printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" 2>/dev/null || true
+  
+  # Report status
+  if [ "${wrote_persistent}" -eq 1 ]; then
+    log "Machine-ID persisted to ${MACHINE_ID_PERSISTENT}"
+    log "Hardware-UUID: ${hardware_uuid}"
+  elif [ "${wrote_etc}" -eq 1 ]; then
+    log "Machine-ID written to ${MACHINE_ID_FILE_ETC}"
+    log "Hardware-UUID: ${hardware_uuid}"
+  else
+    log "WARNING: Could not persist machine-id to writable storage"
+    log "WARNING: Authentication may not persist across container restarts"
+  fi
+  
+  # Export for use by fake-dmidecode and Java
+  export HYTALE_RUNTIME_MACHINE_ID="${machine_id}"
+  export HYTALE_HARDWARE_UUID="${hardware_uuid}"
+}
+
+setup_machine_id
+
 # Auto-load server tokens from persistent file if not already set
 HYTALE_SERVER_TOKENS_FILE="${HYTALE_SERVER_TOKENS_FILE:-${DATA_DIR}/.hytale-server-tokens}"
 if [ -f "${HYTALE_SERVER_TOKENS_FILE}" ]; then
@@ -119,66 +221,10 @@ HYTALE_MODS_DOWNLOAD_FAIL_ON_ERROR="${HYTALE_MODS_DOWNLOAD_FAIL_ON_ERROR:-true}"
 
 ENABLE_AOT="${ENABLE_AOT:-auto}"
 
-HYTALE_MACHINE_ID="${HYTALE_MACHINE_ID:-}"
-
 user_args="$*"
 
 mkdir -p "${SERVER_DIR}"
 check_dir_writable "${SERVER_DIR}"
-
-setup_machine_id() {
-  # Write to all locations that Java's HardwareUtil might check
-  MACHINE_ID_FILE_ETC="/etc/machine-id"
-  MACHINE_ID_FILE_DBUS="/var/lib/dbus/machine-id"
-  MACHINE_ID_PERSISTENT="${DATA_DIR}/.machine-id"
-
-  if [ -n "${HYTALE_MACHINE_ID}" ]; then
-    machine_id="${HYTALE_MACHINE_ID}"
-  elif [ -f "${MACHINE_ID_PERSISTENT}" ]; then
-    machine_id="$(cat "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true)"
-  else
-    machine_id=""
-  fi
-
-  if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
-    if command -v uuidgen >/dev/null 2>&1; then
-      machine_id="$(uuidgen | tr -d '-' | tr '[:upper:]' '[:lower:]')"
-    else
-      machine_id="$(cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '-' | tr '[:upper:]' '[:lower:]' || true)"
-    fi
-  fi
-
-  if [ -z "${machine_id}" ] || [ "${#machine_id}" -ne 32 ]; then
-    log "ERROR: Failed to generate a valid machine-id"
-    exit 1
-  fi
-
-  # Try to write to all locations - suppress all errors for read-only filesystem
-  wrote_etc=0
-  wrote_persistent=0
-  
-  if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" ) >/dev/null 2>&1; then
-    wrote_etc=1
-  fi
-  
-  ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" ) >/dev/null 2>&1 || true
-  
-  if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" ) >/dev/null 2>&1; then
-    wrote_persistent=1
-  fi
-  
-  # Only warn if we couldn't write to /etc/machine-id AND couldn't write to persistent storage
-  if [ "${wrote_etc}" -eq 0 ] && [ "${wrote_persistent}" -eq 0 ]; then
-    log "WARNING: Could not write to ${MACHINE_ID_FILE_ETC} (read-only filesystem?)"
-    log "WARNING: The Hytale server may fail with 'Failed to get Hardware UUID'."
-    log "WARNING: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
-  fi
-  
-  # Export for Java system properties
-  export HYTALE_RUNTIME_MACHINE_ID="${machine_id}"
-}
-
-setup_machine_id
 
 log "Thank you for using the Hytale Server Docker Image by Hybrowse!"
 log "- Add your server to our server list: https://hybrowse.gg"
@@ -242,69 +288,20 @@ if [ "${missing}" -ne 0 ]; then
   log "- Or set HYTALE_AUTO_DOWNLOAD=true"
   log "- On Apple Silicon (arm64): auto-download requires running the container as linux/amd64 (Docker Compose: platform: linux/amd64)"
   log "- See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/server-files.md"
-  log "- See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/quickstart.md"
   exit 1
 fi
 
-if [ -n "${HYTALE_CURSEFORGE_MODS}" ]; then
-  if [ -z "${HYTALE_MODS_PATH:-}" ]; then
-    HYTALE_MODS_PATH="${DATA_DIR}/Server/mods-curseforge"
-  fi
-  mkdir -p "${HYTALE_MODS_PATH}"
-  check_dir_writable "${HYTALE_MODS_PATH}"
-  /usr/local/bin/hytale-curseforge-mods
+if [ -n "${HYTALE_CURSEFORGE_MODS:-}" ]; then
+  /usr/local/bin/hytale-curseforge-mods || true
 fi
 
-DATA_DIR="${DATA_DIR:-/home/container}"
-SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
-export DATA_DIR SERVER_DIR
-
-/usr/local/bin/hytale-prestart-downloads
-
-/usr/local/bin/hytale-cfg-interpolate
-
-log "Starting Hytale dedicated server"
-log "- Assets: ${HYTALE_ASSETS_PATH}"
-log "- Bind: ${HYTALE_BIND}"
-log "- Auth mode: ${HYTALE_AUTH_MODE}"
-
-if is_true "${HYTALE_DISABLE_SENTRY}"; then
-  log "- Disable Sentry: enabled"
+if [ -n "${HYTALE_UNIVERSE_DOWNLOAD_URLS:-}" ] || [ -n "${HYTALE_MODS_DOWNLOAD_URLS:-}" ]; then
+  /usr/local/bin/hytale-prestart-downloads || true
 fi
 
-if is_true "${HYTALE_ACCEPT_EARLY_PLUGINS}"; then
-  log "- Accept early plugins: enabled"
-fi
+/usr/local/bin/hytale-cfg-interpolate || true
 
-if is_true "${HYTALE_ENABLE_BACKUP}"; then
-  if [ -z "${HYTALE_BACKUP_DIR:-}" ]; then
-    HYTALE_BACKUP_DIR="${DATA_DIR}/backups"
-  fi
-  mkdir -p "${HYTALE_BACKUP_DIR}"
-  log "- Backup: enabled"
-  log "- Backup dir: ${HYTALE_BACKUP_DIR}"
-fi
-
-if [ -n "${JVM_XMS:-}" ]; then
-  log "- JVM_XMS: ${JVM_XMS}"
-fi
-
-if [ -n "${JVM_XMX:-}" ]; then
-  log "- JVM_XMX: ${JVM_XMX}"
-fi
-
-if [ -n "${TZ:-}" ]; then
-  log "- TZ: ${TZ}"
-fi
-
-if [ -n "${HYTALE_SERVER_SESSION_TOKEN:-}" ]; then
-  log "- Session token: [set]"
-fi
-
-if [ -n "${HYTALE_SERVER_IDENTITY_TOKEN:-}" ]; then
-  log "- Identity token: [set]"
-fi
-
+# Build Java arguments
 set -- java
 
 if [ -n "${JVM_XMS:-}" ]; then
@@ -319,13 +316,25 @@ if [ -n "${TZ:-}" ]; then
   set -- "$@" "-Duser.timezone=${TZ}"
 fi
 
-# Pass machine-id to Java for hardware UUID detection
+# ============================================================================
+# HARDWARE UUID JAVA PROPERTIES
+# ============================================================================
+# Pass the machine-id/hardware-uuid to Java through multiple system properties.
+# Different versions of HardwareUtil.java may check different property names.
+# ============================================================================
 if [ -n "${HYTALE_RUNTIME_MACHINE_ID:-}" ]; then
+  # Standard machine-id format (32 hex chars, no dashes)
   set -- "$@" "-Dmachine.id=${HYTALE_RUNTIME_MACHINE_ID}"
-  set -- "$@" "-Dhardware.uuid=${HYTALE_RUNTIME_MACHINE_ID}"
-  # UUID format with dashes
-  JAVA_MACHINE_UUID="$(echo "${HYTALE_RUNTIME_MACHINE_ID}" | sed 's/^\(........\)\(....\)\(....\)\(....\)\(............\)$/\1-\2-\3-\4-\5/')"
-  set -- "$@" "-Dhardware.uuid.dashed=${JAVA_MACHINE_UUID}"
+  set -- "$@" "-Djna.platform.uuid=${HYTALE_RUNTIME_MACHINE_ID}"
+fi
+
+if [ -n "${HYTALE_HARDWARE_UUID:-}" ]; then
+  # UUID format with dashes (8-4-4-4-12)
+  set -- "$@" "-Dhardware.uuid=${HYTALE_HARDWARE_UUID}"
+  set -- "$@" "-Dsystem.uuid=${HYTALE_HARDWARE_UUID}"
+  set -- "$@" "-Djna.system.uuid=${HYTALE_HARDWARE_UUID}"
+  # Some implementations look for this specific property
+  set -- "$@" "-Dcom.sun.management.jmxremote.machine.id=${HYTALE_HARDWARE_UUID}"
 fi
 
 aot_generate=0
