@@ -32,6 +32,7 @@
         "Default": "/usr/bin/tini -- /usr/local/bin/hytale-entrypoint"
     },
     "config": {
+        "privileged": true,
         "files": "{}",
         "startup": "{\n    \"done\": \"Hytale Server Booted!\",\n    \"user_interaction\": [\n        \"Please visit\",\n        \"Enter the code\",\n        \"/auth\"\n    ]\n}",
         "logs": "{}",
