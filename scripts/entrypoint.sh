@@ -86,21 +86,21 @@ setup_machine_id() {
   
   # Persist to data volume (critical for auth persistence across restarts)
   wrote_persistent=0
-  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" 2>/dev/null; then
+  if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_PERSISTENT}" ) >/dev/null 2>&1; then
     chmod 644 "${MACHINE_ID_PERSISTENT}" 2>/dev/null || true
     wrote_persistent=1
   fi
   
-  if printf '%s\n' "${hardware_uuid}" > "${HARDWARE_UUID_PERSISTENT}" 2>/dev/null; then
+  if ( printf '%s\n' "${hardware_uuid}" > "${HARDWARE_UUID_PERSISTENT}" ) >/dev/null 2>&1; then
     chmod 644 "${HARDWARE_UUID_PERSISTENT}" 2>/dev/null || true
   fi
   
   # Try to write to system locations (may fail in read-only containers)
   wrote_etc=0
-  if printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" 2>/dev/null; then
+  if ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_ETC}" ) >/dev/null 2>&1; then
     wrote_etc=1
   fi
-  printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" 2>/dev/null || true
+  ( printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" ) >/dev/null 2>&1 || true
   
   # Report status (don't log actual values for security)
   if [ "${wrote_persistent}" -eq 1 ]; then
