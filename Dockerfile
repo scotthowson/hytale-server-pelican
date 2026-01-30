@@ -61,6 +61,7 @@ COPY scripts/save-auth-tokens.sh /usr/local/bin/hytale-save-auth-tokens
 COPY scripts/extract-auth-tokens.sh /usr/local/bin/hytale-extract-auth-tokens
 COPY scripts/check-machine-id.sh /usr/local/bin/check-machine-id
 COPY scripts/debug-hardware-uuid.sh /usr/local/bin/debug-hardware-uuid
+COPY scripts/diagnose-auth.sh /usr/local/bin/diagnose-auth
 
 # Make all scripts executable
 RUN chmod 0755 /usr/local/bin/*

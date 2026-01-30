@@ -66,7 +66,7 @@ setup_machine_id() {
     else
       machine_id="$(cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '-' | tr '[:upper:]' '[:lower:]' || true)"
     fi
-    log "Generated new machine-id: ${machine_id}"
+    log "Generated new machine-id"
   fi
   
   # Validate
@@ -102,13 +102,11 @@ setup_machine_id() {
   fi
   printf '%s\n' "${machine_id}" > "${MACHINE_ID_FILE_DBUS}" 2>/dev/null || true
   
-  # Report status
+  # Report status (don't log actual values for security)
   if [ "${wrote_persistent}" -eq 1 ]; then
     log "Machine-ID persisted to ${MACHINE_ID_PERSISTENT}"
-    log "Hardware-UUID: ${hardware_uuid}"
   elif [ "${wrote_etc}" -eq 1 ]; then
     log "Machine-ID written to ${MACHINE_ID_FILE_ETC}"
-    log "Hardware-UUID: ${hardware_uuid}"
   else
     log "WARNING: Could not persist machine-id to writable storage"
     log "WARNING: Authentication may not persist across container restarts"
@@ -292,14 +290,61 @@ if [ "${missing}" -ne 0 ]; then
 fi
 
 if [ -n "${HYTALE_CURSEFORGE_MODS:-}" ]; then
+  if [ -z "${HYTALE_MODS_PATH:-}" ]; then
+    HYTALE_MODS_PATH="${DATA_DIR}/Server/mods-curseforge"
+  fi
+  mkdir -p "${HYTALE_MODS_PATH}"
+  check_dir_writable "${HYTALE_MODS_PATH}"
   /usr/local/bin/hytale-curseforge-mods || true
 fi
 
-if [ -n "${HYTALE_UNIVERSE_DOWNLOAD_URLS:-}" ] || [ -n "${HYTALE_MODS_DOWNLOAD_URLS:-}" ]; then
-  /usr/local/bin/hytale-prestart-downloads || true
-fi
+export DATA_DIR SERVER_DIR
+
+/usr/local/bin/hytale-prestart-downloads || true
 
 /usr/local/bin/hytale-cfg-interpolate || true
+
+log "Starting Hytale dedicated server"
+log "- Assets: ${HYTALE_ASSETS_PATH}"
+log "- Bind: ${HYTALE_BIND}"
+log "- Auth mode: ${HYTALE_AUTH_MODE}"
+
+if is_true "${HYTALE_DISABLE_SENTRY}"; then
+  log "- Disable Sentry: enabled"
+fi
+
+if is_true "${HYTALE_ACCEPT_EARLY_PLUGINS}"; then
+  log "- Accept early plugins: enabled"
+fi
+
+if is_true "${HYTALE_ENABLE_BACKUP}"; then
+  if [ -z "${HYTALE_BACKUP_DIR:-}" ]; then
+    HYTALE_BACKUP_DIR="${DATA_DIR}/backups"
+  fi
+  mkdir -p "${HYTALE_BACKUP_DIR}"
+  log "- Backup: enabled"
+  log "- Backup dir: ${HYTALE_BACKUP_DIR}"
+fi
+
+if [ -n "${JVM_XMS:-}" ]; then
+  log "- JVM_XMS: ${JVM_XMS}"
+fi
+
+if [ -n "${JVM_XMX:-}" ]; then
+  log "- JVM_XMX: ${JVM_XMX}"
+fi
+
+if [ -n "${TZ:-}" ]; then
+  log "- TZ: ${TZ}"
+fi
+
+if [ -n "${HYTALE_SERVER_SESSION_TOKEN:-}" ]; then
+  log "- Session token: [set]"
+fi
+
+if [ -n "${HYTALE_SERVER_IDENTITY_TOKEN:-}" ]; then
+  log "- Identity token: [set]"
+fi
 
 # Build Java arguments
 set -- java
