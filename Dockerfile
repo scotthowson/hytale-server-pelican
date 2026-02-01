@@ -4,15 +4,24 @@ FROM container-registry.oracle.com/graalvm/native-image:25
 # INSTALL DEPENDENCIES (Oracle Linux uses microdnf, not apt)
 # ============================================================================
 # Note: We intentionally do NOT install real dmidecode - our fake one handles UUID
+ARG TARGETARCH
 RUN microdnf install -y \
-      tini \
       ca-certificates \
       curl \
       unzip \
       jq \
       util-linux \
       shadow-utils \
-  && microdnf clean all
+  && microdnf clean all \
+  && case "$TARGETARCH" in \
+       amd64)  TINI_ARCH=amd64 ;; \
+       arm64)  TINI_ARCH=arm64 ;; \
+       *) echo "Unsupported arch: $TARGETARCH" && exit 1 ;; \
+     esac \
+  && curl -fsSL https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-${TINI_ARCH} \
+       -o /usr/bin/tini \
+  && chmod +x /usr/bin/tini
+
 
 # ============================================================================
 # USER / GROUP SETUP
