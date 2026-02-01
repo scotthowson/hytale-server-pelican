@@ -393,31 +393,32 @@ generate_aot_cache() {
   
   cd "${SERVER_DIR}"
   
-  # Build command as an array for proper argument handling
-  set -- java --enable-native-access=ALL-UNNAMED
+  # IMPORTANT: Clear JAVA_TOOL_OPTIONS during generation to prevent mismatch
+  # The GraalVM image may set this, causing module mismatches between
+  # generation and runtime.
+  unset JAVA_TOOL_OPTIONS
+  
+  # Build the same JVM arguments that will be used at runtime
+  # This ensures the AOT cache is compatible
+  aot_java_args="--enable-native-access=ALL-UNNAMED"
   
   # Add memory settings if specified
   if [ -n "${JVM_XMX:-}" ]; then
-    set -- "$@" "-Xmx${JVM_XMX}"
+    aot_java_args="${aot_java_args} -Xmx${JVM_XMX}"
   else
-    # Default to 4G for AOT generation if not specified
-    set -- "$@" "-Xmx4G"
+    aot_java_args="${aot_java_args} -Xmx4G"
   fi
-  
-  # AOT cache output path
-  set -- "$@" "-XX:AOTCacheOutput=${HYTALE_AOT_PATH}"
-  
-  # Server jar and required args
-  set -- "$@" -jar "${HYTALE_SERVER_JAR}"
-  set -- "$@" --assets "${HYTALE_ASSETS_PATH}"
-  set -- "$@" --bare
-  set -- "$@" --validate-assets
-  set -- "$@" --shutdown-after-validate
   
   # Run AOT generation with output captured
   log "- AOT: running server in training mode..."
-  "$@" > "${aot_log}" 2>&1
-  gen_exit_code=$?
+  java ${aot_java_args} \
+    -XX:AOTCacheOutput="${HYTALE_AOT_PATH}" \
+    -jar "${HYTALE_SERVER_JAR}" \
+    --assets "${HYTALE_ASSETS_PATH}" \
+    --bare \
+    --validate-assets \
+    --shutdown-after-validate \
+    > "${aot_log}" 2>&1
   
   # Check if AOT cache was created (check the log for success message)
   if grep -q "AOTCache creation is complete" "${aot_log}" 2>/dev/null; then
@@ -514,6 +515,17 @@ case "$(lower "${ENABLE_AOT}")" in
     exit 1
     ;;
 esac
+
+# ============================================================================
+# CLEAR JAVA_TOOL_OPTIONS
+# ============================================================================
+# GraalVM images may set JAVA_TOOL_OPTIONS which adds extra JVM modules.
+# This causes AOT cache mismatches. We clear it and set our own JVM args.
+# ============================================================================
+if [ -n "${JAVA_TOOL_OPTIONS:-}" ]; then
+  log "- Clearing JAVA_TOOL_OPTIONS (was: ${JAVA_TOOL_OPTIONS})"
+  unset JAVA_TOOL_OPTIONS
+fi
 
 # Build Java arguments
 set -- java
