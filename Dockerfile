@@ -1,4 +1,4 @@
-FROM eclipse-temurin:25-jre
+FROM container-registry.oracle.com/graalvm/native-image:25
 
 # Install dependencies
 # Note: We intentionally do NOT install real dmidecode - our fake one handles UUID
