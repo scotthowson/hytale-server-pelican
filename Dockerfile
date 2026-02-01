@@ -77,7 +77,7 @@ COPY scripts/diagnose-auth.sh /usr/local/bin/diagnose-auth
 RUN chmod 0755 /usr/local/bin/*
 
 # Verify fake dmidecode is first in PATH
-RUN which dmidecode | grep -q '/usr/local/bin/dmidecode' \
+RUN command -v dmidecode | grep -q '/usr/local/bin/dmidecode' \
   || (echo "ERROR: fake dmidecode not first in PATH" && exit 1)
 
 # Fix ownership
