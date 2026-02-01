@@ -29,12 +29,17 @@ log() {
 DATA_DIR="${DATA_DIR:-/home/container}"
 SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 
-# Ensure /tmp is writable for Java temp files
-if [ ! -d "/tmp" ] || [ ! -w "/tmp" ]; then
-  mkdir -p "${DATA_DIR}/tmp" 2>/dev/null || true
-  export TMPDIR="${DATA_DIR}/tmp"
-  export JAVA_OPTS="${JAVA_OPTS:-} -Djava.io.tmpdir=${DATA_DIR}/tmp"
-fi
+# ============================================================================
+# TEMP DIRECTORY SETUP
+# ============================================================================
+# Ensure we have a writable temp directory for Java and other tools
+# that create temporary files (like zipfstmp*.tmp files)
+# ============================================================================
+HYTALE_TMP_DIR="${DATA_DIR}/tmp"
+mkdir -p "${HYTALE_TMP_DIR}" 2>/dev/null || true
+chmod 1777 "${HYTALE_TMP_DIR}" 2>/dev/null || true
+export TMPDIR="${HYTALE_TMP_DIR}"
+export JAVA_OPTS="${JAVA_OPTS:-} -Djava.io.tmpdir=${HYTALE_TMP_DIR}"
 
 # ============================================================================
 # PELICAN PANEL VARIABLE MAPPING
@@ -269,9 +274,8 @@ if is_true "${HYTALE_AUTO_DOWNLOAD}"; then
 fi
 
 if [ "${missing}" -ne 0 ]; then
-  log "ERROR: Missing server files"
-  log "  Expected: ${HYTALE_SERVER_JAR}"
-  log "  Expected: ${HYTALE_ASSETS_PATH}"
+  log "ERROR: Missing server jar: ${HYTALE_SERVER_JAR}"
+  log "ERROR: Missing assets: ${HYTALE_ASSETS_PATH}"
   log "Set HYTALE_AUTO_DOWNLOAD=true for automatic download"
   exit 1
 fi
@@ -309,12 +313,21 @@ fi
 # ============================================================================
 # AOT CACHE HANDLING
 # ============================================================================
+# GraalVM automatically loads certain modules (jdk.internal.vm.ci) at runtime.
+# We must include these same modules during AOT generation or the cache will
+# be rejected due to module mismatch.
+# ============================================================================
+
+# Modules that GraalVM loads automatically - must be included in AOT generation
+GRAALVM_MODULES="jdk.internal.vm.ci"
+
 validate_aot_cache() {
   aot_file="$1"
   [ -f "${aot_file}" ] || return 1
   
-  # Test the cache - if Java can load it without errors, it's valid
-  if java -XX:AOTCache="${aot_file}" -XX:AOTMode=auto -version 2>&1 | grep -q "error.*aot"; then
+  # Test the cache with the same modules we'll use at runtime
+  test_output="$(java --add-modules=${GRAALVM_MODULES} -XX:AOTCache="${aot_file}" -XX:AOTMode=auto -version 2>&1)"
+  if printf '%s' "${test_output}" | grep -qi "error.*aot"; then
     return 1
   fi
   return 0
@@ -326,10 +339,12 @@ generate_aot_cache() {
   aot_log="${DATA_DIR}/.aot-generation.log"
   cd "${SERVER_DIR}"
   
-  # Use same JVM args as runtime
+  # Use same JVM args as runtime, INCLUDING the GraalVM modules
   java_mem="${JVM_XMX:-4G}"
   
-  java --enable-native-access=ALL-UNNAMED \
+  # Generate AOT with explicit modules to match runtime
+  java --add-modules=${GRAALVM_MODULES} \
+    --enable-native-access=ALL-UNNAMED \
     -Xmx${java_mem} \
     -XX:AOTCacheOutput="${HYTALE_AOT_PATH}" \
     -jar "${HYTALE_SERVER_JAR}" \
@@ -396,7 +411,13 @@ esac
 # BUILD JAVA COMMAND
 # ============================================================================
 set -- java
+
+# Add GraalVM modules explicitly for AOT compatibility
+set -- "$@" "--add-modules=${GRAALVM_MODULES}"
 set -- "$@" "--enable-native-access=ALL-UNNAMED"
+
+# Set temp directory
+set -- "$@" "-Djava.io.tmpdir=${HYTALE_TMP_DIR}"
 
 [ -n "${JVM_XMS:-}" ] && set -- "$@" "-Xms${JVM_XMS}"
 [ -n "${JVM_XMX:-}" ] && set -- "$@" "-Xmx${JVM_XMX}"
