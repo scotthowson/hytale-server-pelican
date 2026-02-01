@@ -418,17 +418,57 @@ download_and_install() {
     log_debug "  Game versions: ${game_versions}"
   fi
   
-  # Get download URL
-  dl_json="$(cf_get "/v1/mods/${mod_id}/files/${file_id}/download-url")" || {
-    log_error "  Could not get download URL for ${file_name}"
-    printf '%s: Could not get download URL\n' "${mod_name}" >> "${ERRORS_LOG}"
-    return 1
-  }
+  # Try multiple methods to get download URL
+  download_url=""
   
-  download_url="$(printf '%s' "${dl_json}" | jq -r '.data // empty')"
-  if [ -z "${download_url}" ]; then
-    log_error "  Empty download URL for ${file_name}"
-    printf '%s: Empty download URL (file may be restricted)\n' "${mod_name}" >> "${ERRORS_LOG}"
+  # Method 1: Check if downloadUrl is directly in file metadata
+  download_url="$(printf '%s' "${file_json}" | jq -r '.downloadUrl // empty' 2>/dev/null || true)"
+  if [ -n "${download_url}" ] && [ "${download_url}" != "null" ]; then
+    log_debug "  Download URL from file metadata"
+  fi
+  
+  # Method 2: Try the dedicated download-url endpoint
+  if [ -z "${download_url}" ] || [ "${download_url}" = "null" ]; then
+    dl_json="$(cf_get "/v1/mods/${mod_id}/files/${file_id}/download-url")" || true
+    if [ -n "${dl_json}" ]; then
+      download_url="$(printf '%s' "${dl_json}" | jq -r '.data // empty')"
+      if [ -n "${download_url}" ] && [ "${download_url}" != "null" ]; then
+        log_debug "  Download URL from API endpoint"
+      fi
+    fi
+  fi
+  
+  # Method 3: Construct URL from CDN pattern (fallback for disabled distribution)
+  # CurseForge CDN pattern: https://edge.forgecdn.net/files/{first 4 digits}/{last digits}/{filename}
+  if [ -z "${download_url}" ] || [ "${download_url}" = "null" ]; then
+    # Try to construct from file ID
+    # File ID format: split into groups for CDN path
+    file_id_str="${file_id}"
+    if [ "${#file_id_str}" -ge 4 ]; then
+      id_part1="$(printf '%s' "${file_id_str}" | cut -c1-4)"
+      id_part2="$(printf '%s' "${file_id_str}" | cut -c5-)"
+      # Remove leading zeros from part2
+      id_part2="$(printf '%d' "${id_part2}" 2>/dev/null || printf '%s' "${id_part2}")"
+      
+      # URL encode the filename (basic - replace spaces with %20)
+      encoded_filename="$(printf '%s' "${file_name}" | sed 's/ /%20/g')"
+      
+      download_url="https://edge.forgecdn.net/files/${id_part1}/${id_part2}/${encoded_filename}"
+      log_debug "  Download URL constructed from CDN pattern: ${download_url}"
+    fi
+  fi
+  
+  # Method 4: Try mediafire-style CDN URL construction
+  if [ -z "${download_url}" ] || [ "${download_url}" = "null" ]; then
+    download_url="https://www.curseforge.com/api/v1/mods/${mod_id}/files/${file_id}/download"
+    log_debug "  Download URL from CurseForge web API: ${download_url}"
+  fi
+  
+  if [ -z "${download_url}" ] || [ "${download_url}" = "null" ]; then
+    log_error "  Could not determine download URL for ${file_name}"
+    log_error "  This mod may have disabled third-party distribution"
+    log_error "  Manual download: https://www.curseforge.com/hytale/mods/${mod_id}/files/${file_id}"
+    printf '%s: Third-party distribution disabled - download manually from CurseForge website\n' "${mod_name}" >> "${ERRORS_LOG}"
     return 1
   fi
   
@@ -872,10 +912,13 @@ if [ "${errors}" -gt 0 ]; then
   fi
   log ""
   log "Troubleshooting tips:"
-  log "  1. Check if mod exists: https://www.curseforge.com/hytale/mods"
-  log "  2. Try different release channel: HYTALE_CURSEFORGE_RELEASE_CHANNEL=beta"
-  log "  3. Check game version filter: HYTALE_CURSEFORGE_GAME_VERSION_FILTER"
-  log "  4. Enable debug logging: HYTALE_CURSEFORGE_DEBUG=true"
+  log "  1. 'Third-party distribution disabled' - The mod author has disabled API downloads."
+  log "     You must download these mods manually from CurseForge website and place them"
+  log "     in your mods folder, OR use HYTALE_MODS_DOWNLOAD_URLS to provide direct URLs."
+  log "  2. Check if mod exists: https://www.curseforge.com/hytale/mods"
+  log "  3. Try different release channel: HYTALE_CURSEFORGE_RELEASE_CHANNEL=beta"
+  log "  4. Check game version filter: HYTALE_CURSEFORGE_GAME_VERSION_FILTER"
+  log "  5. Enable debug logging: HYTALE_CURSEFORGE_DEBUG=true"
 fi
 
 if [ "${errors}" -gt 0 ] && is_true "${HYTALE_CURSEFORGE_FAIL_ON_ERROR}"; then
