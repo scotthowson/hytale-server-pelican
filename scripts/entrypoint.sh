@@ -4,10 +4,6 @@ set -eu
 # ============================================================================
 # CLEAR JAVA_TOOL_OPTIONS IMMEDIATELY
 # ============================================================================
-# GraalVM images set JAVA_TOOL_OPTIONS which adds extra JVM modules.
-# This MUST be cleared at the very start, before any Java commands run,
-# otherwise AOT cache generation and runtime will have mismatched modules.
-# ============================================================================
 unset JAVA_TOOL_OPTIONS 2>/dev/null || true
 export JAVA_TOOL_OPTIONS=""
 
@@ -32,14 +28,10 @@ SERVER_DIR="${SERVER_DIR:-/home/container/Server}"
 # ============================================================================
 # TEMP DIRECTORY SETUP
 # ============================================================================
-# Ensure we have a writable temp directory for Java and other tools
-# that create temporary files (like zipfstmp*.tmp files)
-# ============================================================================
 HYTALE_TMP_DIR="${DATA_DIR}/tmp"
 mkdir -p "${HYTALE_TMP_DIR}" 2>/dev/null || true
 chmod 1777 "${HYTALE_TMP_DIR}" 2>/dev/null || true
 export TMPDIR="${HYTALE_TMP_DIR}"
-export JAVA_OPTS="${JAVA_OPTS:-} -Djava.io.tmpdir=${HYTALE_TMP_DIR}"
 
 # ============================================================================
 # PELICAN PANEL VARIABLE MAPPING
@@ -185,6 +177,7 @@ fi
 check_data_writable() {
   if [ ! -w "${DATA_DIR}" ]; then
     log "ERROR: Cannot write to ${DATA_DIR}"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
     exit 1
   fi
 }
@@ -193,6 +186,8 @@ check_dir_writable() {
   dir="$1"
   if [ ! -w "${dir}" ]; then
     log "ERROR: Cannot write to ${dir}"
+    log "ERROR: Current owner: $(ls -ld "${dir}" 2>/dev/null | awk '{print $3":"$4}')"
+    log "ERROR: See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/troubleshooting.md"
     exit 1
   fi
 }
@@ -202,6 +197,7 @@ check_data_writable
 HYTALE_SERVER_JAR="${HYTALE_SERVER_JAR:-${SERVER_DIR}/HytaleServer.jar}"
 HYTALE_ASSETS_PATH="${HYTALE_ASSETS_PATH:-${DATA_DIR}/Assets.zip}"
 HYTALE_AOT_PATH="${HYTALE_AOT_PATH:-${SERVER_DIR}/HytaleServer.aot}"
+HYTALE_CONFIG_PATH="${HYTALE_CONFIG_PATH:-${SERVER_DIR}/config.json}"
 
 HYTALE_BIND="${HYTALE_BIND:-0.0.0.0:5520}"
 HYTALE_AUTH_MODE="${HYTALE_AUTH_MODE:-authenticated}"
@@ -238,6 +234,13 @@ HYTALE_CONSOLE_PIPE="${HYTALE_CONSOLE_PIPE:-true}"
 HYTALE_JAVA_TERMINAL_PROPS="${HYTALE_JAVA_TERMINAL_PROPS:-true}"
 HYTALE_CURSEFORGE_MODS="${HYTALE_CURSEFORGE_MODS:-}"
 
+# Config file settings
+HYTALE_SERVER_NAME="${HYTALE_SERVER_NAME:-}"
+HYTALE_MOTD="${HYTALE_MOTD:-}"
+HYTALE_MAX_PLAYERS="${HYTALE_MAX_PLAYERS:-}"
+HYTALE_DEFAULT_WORLD="${HYTALE_DEFAULT_WORLD:-}"
+HYTALE_MAX_VIEW_RADIUS="${HYTALE_MAX_VIEW_RADIUS:-}"
+
 ENABLE_AOT="${ENABLE_AOT:-auto}"
 HYTALE_AOT_AUTO_GENERATE="${HYTALE_AOT_AUTO_GENERATE:-true}"
 
@@ -257,14 +260,25 @@ fi
 
 missing=0
 if [ ! -f "${HYTALE_SERVER_JAR}" ]; then
+  if is_true "${HYTALE_AUTO_DOWNLOAD}"; then
+    log "Missing server jar: ${HYTALE_SERVER_JAR}"
+  else
+    log "ERROR: Missing server jar: ${HYTALE_SERVER_JAR}"
+  fi
   missing=1
 fi
 if [ ! -f "${HYTALE_ASSETS_PATH}" ]; then
+  if is_true "${HYTALE_AUTO_DOWNLOAD}"; then
+    log "Missing assets: ${HYTALE_ASSETS_PATH}"
+  else
+    log "ERROR: Missing assets: ${HYTALE_ASSETS_PATH}"
+  fi
   missing=1
 fi
 
 if is_true "${HYTALE_AUTO_DOWNLOAD}"; then
   if [ "${missing}" -ne 0 ] || is_true "${HYTALE_AUTO_UPDATE}"; then
+    log "Attempting auto-download via official Hytale Downloader"
     /usr/local/bin/hytale-auto-download || true
     
     missing=0
@@ -274,11 +288,83 @@ if is_true "${HYTALE_AUTO_DOWNLOAD}"; then
 fi
 
 if [ "${missing}" -ne 0 ]; then
-  log "ERROR: Missing server jar: ${HYTALE_SERVER_JAR}"
-  log "ERROR: Missing assets: ${HYTALE_ASSETS_PATH}"
+  log ""
+  log "Expected volume layout:"
+  log "  ${DATA_DIR}/Assets.zip"
+  log "  ${SERVER_DIR}/HytaleServer.jar"
+  log ""
   log "Set HYTALE_AUTO_DOWNLOAD=true for automatic download"
+  log "See https://github.com/scotthowson/hytale-server-pelican/blob/main/docs/image/server-files.md"
   exit 1
 fi
+
+# ============================================================================
+# CONFIG.JSON UPDATE
+# ============================================================================
+update_config_json() {
+  config_file="${HYTALE_CONFIG_PATH}"
+  
+  command -v jq >/dev/null 2>&1 || return 0
+  
+  if [ ! -f "${config_file}" ]; then
+    cat > "${config_file}" << 'DEFAULTCONFIG'
+{
+  "Version": 3,
+  "ServerName": "Hytale Server",
+  "MOTD": "Welcome to our server!",
+  "Password": "",
+  "MaxPlayers": 16,
+  "MaxViewRadius": 32,
+  "Defaults": {
+    "World": "Default",
+    "GameMode": "Adventure"
+  },
+  "ConnectionTimeouts": {},
+  "RateLimit": {},
+  "Modules": {},
+  "LogLevels": {},
+  "Mods": {},
+  "DisplayTmpTagsInStrings": false,
+  "PlayerStorage": {
+    "Type": "Hytale"
+  },
+  "AuthCredentialStore": {
+    "Type": "Encrypted",
+    "Path": "auth.enc"
+  },
+  "Update": {}
+}
+DEFAULTCONFIG
+    log "Created default config.json"
+  fi
+  
+  tmp_config="${config_file}.tmp"
+  cp "${config_file}" "${tmp_config}"
+  
+  if [ -n "${HYTALE_SERVER_NAME:-}" ]; then
+    jq --arg val "${HYTALE_SERVER_NAME}" '.ServerName = $val' "${tmp_config}" > "${tmp_config}.new" && mv "${tmp_config}.new" "${tmp_config}"
+  fi
+  
+  if [ -n "${HYTALE_MOTD:-}" ]; then
+    jq --arg val "${HYTALE_MOTD}" '.MOTD = $val' "${tmp_config}" > "${tmp_config}.new" && mv "${tmp_config}.new" "${tmp_config}"
+  fi
+  
+  if [ -n "${HYTALE_MAX_PLAYERS:-}" ]; then
+    jq --argjson val "${HYTALE_MAX_PLAYERS}" '.MaxPlayers = $val' "${tmp_config}" > "${tmp_config}.new" && mv "${tmp_config}.new" "${tmp_config}"
+  fi
+  
+  if [ -n "${HYTALE_MAX_VIEW_RADIUS:-}" ]; then
+    jq --argjson val "${HYTALE_MAX_VIEW_RADIUS}" '.MaxViewRadius = $val' "${tmp_config}" > "${tmp_config}.new" && mv "${tmp_config}.new" "${tmp_config}"
+  fi
+  
+  if [ -n "${HYTALE_DEFAULT_WORLD:-}" ]; then
+    jq --arg val "${HYTALE_DEFAULT_WORLD}" '.Defaults.World = $val' "${tmp_config}" > "${tmp_config}.new" && mv "${tmp_config}.new" "${tmp_config}"
+  fi
+  
+  mv "${tmp_config}" "${config_file}"
+}
+
+update_config_json
 
 # CurseForge mods
 if [ -n "${HYTALE_CURSEFORGE_MODS:-}" ]; then
@@ -313,24 +399,27 @@ fi
 # ============================================================================
 # AOT CACHE HANDLING
 # ============================================================================
-# GraalVM automatically loads certain modules (jdk.internal.vm.ci) at runtime.
-# We must include these same modules during AOT generation or the cache will
-# be rejected due to module mismatch.
-# ============================================================================
-
-# Modules that GraalVM loads automatically - must be included in AOT generation
 GRAALVM_MODULES="jdk.internal.vm.ci"
+
+get_jvm_hash() {
+  java -version 2>&1 | head -3 | md5sum 2>/dev/null | cut -c1-32 || echo "unknown"
+}
 
 validate_aot_cache() {
   aot_file="$1"
   [ -f "${aot_file}" ] || return 1
   
-  # Test the cache with the same modules we'll use at runtime
-  test_output="$(java --add-modules=${GRAALVM_MODULES} -XX:AOTCache="${aot_file}" -XX:AOTMode=auto -version 2>&1)"
-  if printf '%s' "${test_output}" | grep -qi "error.*aot"; then
-    return 1
+  jvm_hash_file="${aot_file}.jvm"
+  current_hash="$(get_jvm_hash)"
+  
+  if [ -f "${jvm_hash_file}" ]; then
+    stored_hash="$(cat "${jvm_hash_file}" 2>/dev/null || echo "")"
+    if [ "${stored_hash}" = "${current_hash}" ]; then
+      return 0
+    fi
   fi
-  return 0
+  
+  return 1
 }
 
 generate_aot_cache() {
@@ -339,12 +428,11 @@ generate_aot_cache() {
   aot_log="${DATA_DIR}/.aot-generation.log"
   cd "${SERVER_DIR}"
   
-  # Use same JVM args as runtime, INCLUDING the GraalVM modules
   java_mem="${JVM_XMX:-4G}"
   
-  # Generate AOT with explicit modules to match runtime
   java --add-modules=${GRAALVM_MODULES} \
     --enable-native-access=ALL-UNNAMED \
+    -Djava.io.tmpdir="${HYTALE_TMP_DIR}" \
     -Xmx${java_mem} \
     -XX:AOTCacheOutput="${HYTALE_AOT_PATH}" \
     -jar "${HYTALE_SERVER_JAR}" \
@@ -354,10 +442,10 @@ generate_aot_cache() {
     --shutdown-after-validate \
     > "${aot_log}" 2>&1 || true
   
-  # Check for success
   if [ -f "${HYTALE_AOT_PATH}" ]; then
     aot_size="$(wc -c < "${HYTALE_AOT_PATH}" 2>/dev/null | tr -d ' ')"
     if [ "${aot_size:-0}" -gt 1000000 ]; then
+      get_jvm_hash > "${HYTALE_AOT_PATH}.jvm"
       log "- AOT: cache generated (${aot_size} bytes)"
       rm -f "${aot_log}" 2>/dev/null
       return 0
@@ -379,8 +467,8 @@ case "$(lower "${ENABLE_AOT}")" in
         log "- AOT: enabled (cache valid)"
         aot_enabled=1
       else
-        log "- AOT: cache incompatible, removing"
-        rm -f "${HYTALE_AOT_PATH}" 2>/dev/null || true
+        log "- AOT: cache outdated, regenerating"
+        rm -f "${HYTALE_AOT_PATH}" "${HYTALE_AOT_PATH}.jvm" 2>/dev/null || true
         if is_true "${HYTALE_AOT_AUTO_GENERATE}"; then
           generate_aot_cache && aot_enabled=1
         fi
@@ -394,11 +482,11 @@ case "$(lower "${ENABLE_AOT}")" in
     fi
     ;;
   true|1|yes|on)
-    if [ -f "${HYTALE_AOT_PATH}" ] && validate_aot_cache "${HYTALE_AOT_PATH}"; then
+    if [ -f "${HYTALE_AOT_PATH}" ]; then
       log "- AOT: enabled"
       aot_enabled=1
     else
-      log "ERROR: AOT enabled but cache invalid/missing"
+      log "ERROR: ENABLE_AOT=true but AOT cache does not exist at ${HYTALE_AOT_PATH}"
       exit 1
     fi
     ;;
@@ -412,18 +500,14 @@ esac
 # ============================================================================
 set -- java
 
-# Add GraalVM modules explicitly for AOT compatibility
 set -- "$@" "--add-modules=${GRAALVM_MODULES}"
 set -- "$@" "--enable-native-access=ALL-UNNAMED"
-
-# Set temp directory
 set -- "$@" "-Djava.io.tmpdir=${HYTALE_TMP_DIR}"
 
 [ -n "${JVM_XMS:-}" ] && set -- "$@" "-Xms${JVM_XMS}"
 [ -n "${JVM_XMX:-}" ] && set -- "$@" "-Xmx${JVM_XMX}"
 [ -n "${TZ:-}" ] && set -- "$@" "-Duser.timezone=${TZ}"
 
-# Hardware UUID properties
 if [ -n "${HYTALE_RUNTIME_MACHINE_ID:-}" ]; then
   set -- "$@" "-Dmachine.id=${HYTALE_RUNTIME_MACHINE_ID}"
   set -- "$@" "-Djna.platform.uuid=${HYTALE_RUNTIME_MACHINE_ID}"
@@ -433,21 +517,17 @@ if [ -n "${HYTALE_HARDWARE_UUID:-}" ]; then
   set -- "$@" "-Dsystem.uuid=${HYTALE_HARDWARE_UUID}"
 fi
 
-# AOT cache
 if [ "${aot_enabled}" -eq 1 ] && [ -f "${HYTALE_AOT_PATH}" ]; then
   set -- "$@" "-XX:AOTCache=${HYTALE_AOT_PATH}" "-XX:AOTMode=auto"
 fi
 
-# Terminal properties
 if is_true "${HYTALE_JAVA_TERMINAL_PROPS}"; then
   set -- "$@" "-Dterminal.jline=${JVM_TERMINAL_JLINE:-false}"
   set -- "$@" "-Dterminal.ansi=${JVM_TERMINAL_ANSI:-true}"
 fi
 
-# Extra JVM args
 [ -n "${JVM_EXTRA_ARGS:-}" ] && set -- "$@" ${JVM_EXTRA_ARGS}
 
-# Server jar and args
 set -- "$@" -jar "${HYTALE_SERVER_JAR}" --assets "${HYTALE_ASSETS_PATH}"
 [ -n "${HYTALE_BIND}" ] && set -- "$@" --bind "${HYTALE_BIND}"
 [ -n "${HYTALE_AUTH_MODE}" ] && set -- "$@" --auth-mode "${HYTALE_AUTH_MODE}"
@@ -485,7 +565,6 @@ is_true "${HYTALE_VALIDATE_WORLD_GEN}" && set -- "$@" --validate-world-gen
 [ -n "${HYTALE_SERVER_SESSION_TOKEN:-}" ] && set -- "$@" --session-token "${HYTALE_SERVER_SESSION_TOKEN}"
 [ -n "${HYTALE_SERVER_IDENTITY_TOKEN:-}" ] && set -- "$@" --identity-token "${HYTALE_SERVER_IDENTITY_TOKEN}"
 
-# Console FIFO
 if is_true "${HYTALE_CONSOLE_PIPE}"; then
   CONSOLE_FIFO="${HYTALE_CONSOLE_FIFO:-/tmp/hytale-console.fifo}"
   rm -f "${CONSOLE_FIFO}" 2>/dev/null || true

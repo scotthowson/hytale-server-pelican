@@ -1,10 +1,10 @@
 {
-    "_comment": "Pelican Panel Egg for Hybrowse Hytale Server - v2.0",
+    "_comment": "Pelican Panel Egg for Hybrowse Hytale Server - v2.1",
     "meta": {
         "version": "PLCN_v3",
         "update_url": null
     },
-    "exported_at": "2026-01-31T00:00:00+00:00",
+    "exported_at": "2026-02-01T00:00:00+00:00",
     "name": "Hytale Server (Hybrowse)",
     "author": "scotthowson@hybrowse.gg",
     "uuid": "8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d",
@@ -43,37 +43,83 @@
     },
     "scripts": {
         "installation": {
-            "script": "#!/bin/bash\nset -e\n\ncd /mnt/server\n\necho \"\"\necho \"========================================\"\necho \"  Hybrowse Hytale Server Installation\"\necho \"========================================\"\necho \"\"\n\n# Set permissions for container user (UID 1000)\nchown -R 1000:1000 /mnt/server 2>/dev/null || true\nchmod -R 755 /mnt/server\n\necho \"Directory prepared for Hytale server.\"\necho \"\"\necho \"The Docker image handles:\"\necho \"  ✓ Automatic server downloads\"\necho \"  ✓ AOT cache generation\"\necho \"  ✓ CurseForge mods (optional)\"\necho \"  ✓ Automatic backups (optional)\"\necho \"\"\necho \"========================================\"\necho \"  AUTHENTICATION (First Start)\"\necho \"========================================\"\necho \"\"\necho \"1. Start server - watch for device code URL\"\necho \"2. Visit URL, enter code to download files\"\necho \"3. After boot, run: /auth login device\"\necho \"4. Follow URL + code to authenticate\"\necho \"5. Done! Players can connect.\"\necho \"\"\necho \"========================================\"\necho \"\"",
+            "script": "#!/bin/bash\nset -e\n\ncd /mnt/server\n\necho \"\"\necho \"========================================\"\necho \"  Hybrowse Hytale Server Installation\"\necho \"========================================\"\necho \"\"\n\nchown -R 1000:1000 /mnt/server 2>/dev/null || true\nchmod -R 755 /mnt/server\n\necho \"Directory prepared for Hytale server.\"\necho \"\"\necho \"The Docker image handles:\"\necho \"  - Automatic server downloads\"\necho \"  - AOT cache generation\"\necho \"  - CurseForge mods (optional)\"\necho \"  - Automatic backups (optional)\"\necho \"\"\necho \"========================================\"\necho \"  AUTHENTICATION (First Start)\"\necho \"========================================\"\necho \"\"\necho \"1. Start server - watch for device code URL\"\necho \"2. Visit URL, enter code to download files\"\necho \"3. After boot, run: /auth login device\"\necho \"4. Follow URL + code to authenticate\"\necho \"5. Done! Players can connect.\"\necho \"\"\necho \"========================================\"\necho \"\"",
             "container": "ghcr.io/pelican-eggs/installers:debian",
             "entrypoint": "bash"
         }
     },
     "variables": [
         {
-            "name": "Auto Download",
-            "description": "Automatically download Hytale server files using the official downloader. First run requires device code authentication.",
-            "env_variable": "HYTALE_AUTO_DOWNLOAD",
-            "default_value": "true",
+            "name": "Server Name",
+            "description": "Display name for your Hytale server (shown in server list)",
+            "env_variable": "HYTALE_SERVER_NAME",
+            "default_value": "Hytale Server",
             "user_viewable": true,
             "user_editable": true,
             "rules": [
                 "required",
-                "in:true,false"
+                "string",
+                "max:100"
             ],
             "sort": 1
         },
         {
-            "name": "Auto Update",
-            "description": "Check for and download server updates on startup.",
-            "env_variable": "HYTALE_AUTO_UPDATE",
-            "default_value": "true",
+            "name": "MOTD",
+            "description": "Message of the Day shown to players when they join",
+            "env_variable": "HYTALE_MOTD",
+            "default_value": "Welcome to our server!",
             "user_viewable": true,
             "user_editable": true,
             "rules": [
                 "required",
-                "in:true,false"
+                "string",
+                "max:255"
             ],
             "sort": 2
+        },
+        {
+            "name": "Max Players",
+            "description": "Maximum number of players allowed on the server",
+            "env_variable": "HYTALE_MAX_PLAYERS",
+            "default_value": "16",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "integer",
+                "min:1",
+                "max:500"
+            ],
+            "sort": 3
+        },
+        {
+            "name": "Default World",
+            "description": "Name of the default world players spawn into",
+            "env_variable": "HYTALE_DEFAULT_WORLD",
+            "default_value": "Default",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string",
+                "max:50"
+            ],
+            "sort": 4
+        },
+        {
+            "name": "View Distance",
+            "description": "Maximum view radius in chunks. Higher = more RAM needed.",
+            "env_variable": "HYTALE_MAX_VIEW_RADIUS",
+            "default_value": "32",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "integer",
+                "min:8",
+                "max:64"
+            ],
+            "sort": 5
         },
         {
             "name": "Server Port",
@@ -87,11 +133,37 @@
                 "integer",
                 "between:1024,65535"
             ],
-            "sort": 3
+            "sort": 6
+        },
+        {
+            "name": "Auto Download",
+            "description": "Automatically download Hytale server files using the official downloader.",
+            "env_variable": "HYTALE_AUTO_DOWNLOAD",
+            "default_value": "true",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "in:true,false"
+            ],
+            "sort": 10
+        },
+        {
+            "name": "Auto Update",
+            "description": "Check for and download server updates on startup.",
+            "env_variable": "HYTALE_AUTO_UPDATE",
+            "default_value": "true",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "in:true,false"
+            ],
+            "sort": 11
         },
         {
             "name": "JVM Memory (MB)",
-            "description": "Maximum JVM heap size in megabytes. Examples: 4096 (4GB), 8192 (8GB), 16384 (16GB). Should not exceed server allocation.",
+            "description": "Maximum JVM heap size in megabytes. Examples: 4096 (4GB), 8192 (8GB), 16384 (16GB).",
             "env_variable": "HYTALE_JVM_XMX",
             "default_value": "4096",
             "user_viewable": true,
@@ -102,11 +174,11 @@
                 "min:1024",
                 "max:65536"
             ],
-            "sort": 4
+            "sort": 20
         },
         {
             "name": "JVM Min Memory (MB)",
-            "description": "Minimum JVM heap size in megabytes. Leave as 0 to not set. Recommended: same as max for dedicated servers.",
+            "description": "Minimum JVM heap size in megabytes. Set to 0 to not specify. Recommended: same as max.",
             "env_variable": "HYTALE_JVM_XMS",
             "default_value": "0",
             "user_viewable": true,
@@ -117,11 +189,11 @@
                 "min:0",
                 "max:65536"
             ],
-            "sort": 5
+            "sort": 21
         },
         {
             "name": "AOT Cache",
-            "description": "Ahead-Of-Time compilation for faster startup. Auto = generate if missing, true = require, false = disable.",
+            "description": "Ahead-Of-Time compilation for faster startup. auto = generate if missing, true = require, false = disable.",
             "env_variable": "HYTALE_USE_AOT",
             "default_value": "auto",
             "user_viewable": true,
@@ -130,11 +202,11 @@
                 "required",
                 "in:auto,true,false"
             ],
-            "sort": 6
+            "sort": 22
         },
         {
             "name": "Authentication Mode",
-            "description": "authenticated = requires login, offline = no auth required, insecure = testing only",
+            "description": "authenticated = requires login, offline = no auth, insecure = testing only",
             "env_variable": "HYTALE_AUTH_MODE",
             "default_value": "authenticated",
             "user_viewable": true,
@@ -143,20 +215,7 @@
                 "required",
                 "in:authenticated,offline,insecure"
             ],
-            "sort": 7
-        },
-        {
-            "name": "Machine ID",
-            "description": "32-char hex string for auth persistence. Auto-generated if empty. Only set when migrating servers.",
-            "env_variable": "HYTALE_MACHINE_ID",
-            "default_value": "",
-            "user_viewable": false,
-            "user_editable": true,
-            "rules": [
-                "nullable",
-                "regex:/^[0-9a-f]{32}$/"
-            ],
-            "sort": 50
+            "sort": 23
         },
         {
             "name": "Enable Backups",
@@ -169,7 +228,7 @@
                 "required",
                 "in:true,false"
             ],
-            "sort": 10
+            "sort": 30
         },
         {
             "name": "Backup Frequency (min)",
@@ -184,7 +243,7 @@
                 "min:5",
                 "max:1440"
             ],
-            "sort": 11
+            "sort": 31
         },
         {
             "name": "Backup Retention",
@@ -199,7 +258,7 @@
                 "min:1",
                 "max:100"
             ],
-            "sort": 12
+            "sort": 32
         },
         {
             "name": "CurseForge Mods",
@@ -212,7 +271,7 @@
                 "nullable",
                 "string"
             ],
-            "sort": 20
+            "sort": 40
         },
         {
             "name": "CurseForge API Key",
@@ -225,7 +284,7 @@
                 "nullable",
                 "string"
             ],
-            "sort": 21
+            "sort": 41
         },
         {
             "name": "Allow Self-Op",
@@ -238,7 +297,20 @@
                 "required",
                 "in:true,false"
             ],
-            "sort": 30
+            "sort": 50
+        },
+        {
+            "name": "Machine ID",
+            "description": "32-char hex string for auth persistence. Auto-generated if empty. Only set when migrating servers.",
+            "env_variable": "HYTALE_MACHINE_ID",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": true,
+            "rules": [
+                "nullable",
+                "regex:/^[0-9a-f]{32}$/"
+            ],
+            "sort": 60
         },
         {
             "name": "JVM Extra Args",
@@ -251,7 +323,7 @@
                 "nullable",
                 "string"
             ],
-            "sort": 40
+            "sort": 61
         },
         {
             "name": "Disable Sentry",
@@ -264,7 +336,7 @@
                 "required",
                 "in:true,false"
             ],
-            "sort": 41
+            "sort": 62
         }
     ]
 }
